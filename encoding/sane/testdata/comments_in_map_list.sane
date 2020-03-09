@@ -1,0 +1,14 @@
+plugins = {
+  my_plugin = {
+    config_file = "xx.san"
+  }
+  #my_other_plugin = {
+  #  xx = "xx"
+  #},
+}
+
+plugins2 = [
+  {
+    config_file = "xx.san"
+  }
+]
