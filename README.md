@@ -15,4 +15,4 @@ This is beta software and may break at any time!
 
 ## Licensing
 
-See `LICENSE.txt` and https://gitlab.com/bloom42/wiki/-/wikis/organization/licensing
+See `LICENSE.txt` and https://bloom.sh/licensing
