@@ -9,6 +9,10 @@
 This is beta software and may break at any time!
 
 
+## To add
+
+* https://github.com/chainswatch/bclib (blockchain)
+
 ## Licensing
 
 See `LICENSE.txt` and https://gitlab.com/bloom42/wiki/-/wikis/organization/licensing
