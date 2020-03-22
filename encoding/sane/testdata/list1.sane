@@ -1,4 +1,0 @@
-ignore = [".git/**"]
-run = [
-  'go run testdata/main.go'
-]

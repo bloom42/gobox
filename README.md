@@ -1,6 +1,6 @@
 <p align="center">
   <h3 align="center">lily</h3>
-  <p align="center">The ;issing pieces of Go's standard library</p>
+  <p align="center">The missing pieces of Go's standard library</p>
 </p>
 
 
