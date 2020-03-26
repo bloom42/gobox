@@ -3,9 +3,10 @@
 package appdir
 
 import (
-	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 type dirs struct {
@@ -16,7 +17,7 @@ func (d *dirs) joinWithHome(xdgEnv string, paths ...string) (string, error) {
 	baseDir := os.Getenv(xdgEnv)
 	if baseDir == "" {
 		home := os.Getenv("HOME")
-		if dir == "" {
+		if home == "" {
 			return "", fmt.Errorf("neither $%s nor $HOME are defined", xdgEnv)
 		}
 		baseDir = filepath.Join(home, paths...)
