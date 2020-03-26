@@ -15,4 +15,4 @@ test:
   tags:
     - docker
   script:
-    - go test
+    - go test ./...
