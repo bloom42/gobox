@@ -3,6 +3,7 @@
 package appdir
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 )
@@ -11,14 +12,14 @@ type dirs struct {
 	name string
 }
 
-func (d *dirs) UserConfig() (string, error) {
-	baseDir := os.Getenv("XDG_CONFIG_HOME")
+func (d *dirs) joinWithHome(xdgEnv string, paths ...string) (string, error) {
+	baseDir := os.Getenv(xdgEnv)
 	if baseDir == "" {
 		home := os.Getenv("HOME")
 		if dir == "" {
-			return "", errors.New("neither $XDG_CONFIG_HOME nor $HOME are defined")
+			return "", fmt.Errorf("neither $%s nor $HOME are defined", xdgEnv)
 		}
-		baseDir = filepath.Join(home, ".config")
+		baseDir = filepath.Join(home, paths...)
 	}
 
 	// handle flatpak case https://docs.flatpak.org/en/latest/conventions.html#xdg-base-directories
@@ -26,55 +27,20 @@ func (d *dirs) UserConfig() (string, error) {
 		return baseDir, nil
 	}
 	return filepath.Join(baseDir, d.name), nil
+}
+
+func (d *dirs) UserConfig() (string, error) {
+	return d.joinWithHome("XDG_CONFIG_HOME", ".config")
 }
 
 func (d *dirs) UserCache() (string, error) {
-	baseDir := os.Getenv("XDG_CACHE_HOME")
-	if baseDir == "" {
-		home := os.Getenv("HOME")
-		if dir == "" {
-			return "", errors.New("neither $XDG_CACHE_HOME nor $HOME are defined")
-		}
-		baseDir = filepath.Join(home, ".cache")
-	}
-
-	// handle flatpak case https://docs.flatpak.org/en/latest/conventions.html#xdg-base-directories
-	if strings.Contains(baseDir, d.name) {
-		return baseDir, nil
-	}
-	return filepath.Join(baseDir, d.name), nil
+	return d.joinWithHome("XDG_CACHE_HOME", ".cache")
 }
 
 func (d *dirs) UserLogs() (string, error) {
-	baseDir := os.Getenv("XDG_STATE_HOME")
-	if baseDir == "" {
-		home := os.Getenv("HOME")
-		if dir == "" {
-			return "", errors.New("neither $XDG_STATE_HOME nor $HOME are defined")
-		}
-		baseDir = filepath.Join(home, ".local", "state")
-	}
-
-	// handle flatpak case https://docs.flatpak.org/en/latest/conventions.html#xdg-base-directories
-	if strings.Contains(baseDir, d.name) {
-		return baseDir, nil
-	}
-	return filepath.Join(baseDir, d.name), nil
+	return d.joinWithHome("XDG_STATE_HOME", ".local", "state")
 }
 
 func (d *dirs) UserData() (string, error) {
-	baseDir := os.Getenv("XDG_DATA_HOME")
-	if baseDir == "" {
-		home := os.Getenv("HOME")
-		if dir == "" {
-			return "", errors.New("neither $XDG_STATE_HOME nor $HOME are defined")
-		}
-		baseDir = filepath.Join(home, ".local", "share")
-	}
-
-	// handle flatpak case https://docs.flatpak.org/en/latest/conventions.html#xdg-base-directories
-	if strings.Contains(baseDir, d.name) {
-		return baseDir, nil
-	}
-	return filepath.Join(baseDir, d.name), nil
+	return d.joinWithHome("XDG_DATA_HOME", ".local", "share")
 }
