@@ -21,6 +21,10 @@ func (d *dirs) UserConfig() (string, error) {
 		baseDir = filepath.Join(home, ".config")
 	}
 
+	// handle flatpak case https://docs.flatpak.org/en/latest/conventions.html#xdg-base-directories
+	if strings.Contains(baseDir, d.name) {
+		return baseDir, nil
+	}
 	return filepath.Join(baseDir, d.name), nil
 }
 
@@ -34,6 +38,10 @@ func (d *dirs) UserCache() (string, error) {
 		baseDir = filepath.Join(home, ".cache")
 	}
 
+	// handle flatpak case https://docs.flatpak.org/en/latest/conventions.html#xdg-base-directories
+	if strings.Contains(baseDir, d.name) {
+		return baseDir, nil
+	}
 	return filepath.Join(baseDir, d.name), nil
 }
 
@@ -47,6 +55,10 @@ func (d *dirs) UserLogs() (string, error) {
 		baseDir = filepath.Join(home, ".local", "state")
 	}
 
+	// handle flatpak case https://docs.flatpak.org/en/latest/conventions.html#xdg-base-directories
+	if strings.Contains(baseDir, d.name) {
+		return baseDir, nil
+	}
 	return filepath.Join(baseDir, d.name), nil
 }
 
@@ -60,5 +72,9 @@ func (d *dirs) UserData() (string, error) {
 		baseDir = filepath.Join(home, ".local", "share")
 	}
 
+	// handle flatpak case https://docs.flatpak.org/en/latest/conventions.html#xdg-base-directories
+	if strings.Contains(baseDir, d.name) {
+		return baseDir, nil
+	}
 	return filepath.Join(baseDir, d.name), nil
 }
