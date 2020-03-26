@@ -20,7 +20,8 @@ func (d *dirs) joinWithHome(xdgEnv string, paths ...string) (string, error) {
 		if home == "" {
 			return "", fmt.Errorf("neither $%s nor $HOME are defined", xdgEnv)
 		}
-		baseDir = filepath.Join(home, paths)
+		paths = append([]string{home}, paths...)
+		baseDir = filepath.Join(paths...)
 	}
 
 	// handle flatpak case https://docs.flatpak.org/en/latest/conventions.html#xdg-base-directories
