@@ -37,7 +37,7 @@ func TestUserConfig(t *testing.T) {
 				panic(err)
 			}
 
-			if have := d.UserConfig(); have != tc.expected {
+			if have, _ := d.UserConfig(); have != tc.expected {
 				t.Errorf("expected %q, found %q", tc.expected, have)
 			}
 		})
@@ -76,7 +76,7 @@ func TestUserCache(t *testing.T) {
 				panic(err)
 			}
 
-			if have := d.UserCache(); have != tc.expected {
+			if have, _ := d.UserCache(); have != tc.expected {
 				t.Errorf("expected %q, found %q", tc.expected, have)
 			}
 		})
@@ -115,7 +115,7 @@ func TestUserLogs(t *testing.T) {
 				panic(err)
 			}
 
-			if have := d.UserLogs(); have != tc.expected {
+			if have, _ := d.UserLogs(); have != tc.expected {
 				t.Errorf("expected %q, found %q", tc.expected, have)
 			}
 		})
@@ -154,7 +154,7 @@ func TestUserData(t *testing.T) {
 				panic(err)
 			}
 
-			if have := d.UserData(); have != tc.expected {
+			if have, _ := d.UserData(); have != tc.expected {
 				t.Errorf("expected %q, found %q", tc.expected, have)
 			}
 		})

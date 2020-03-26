@@ -4,13 +4,13 @@ package appdir
 // Dirs requests application directories paths.
 type Dirs interface {
 	// Get the user-specific config directory.
-	UserConfig() string
+	UserConfig() (string, error)
 	// Get the user-specific cache directory.
-	UserCache() string
+	UserCache() (string, error)
 	// Get the user-specific logs directory.
-	UserLogs() string
+	UserLogs() (string, error)
 	// Get the user-specific data directory.
-	UserData() string
+	UserData() (string, error)
 }
 
 // New creates a new App with the provided name.
