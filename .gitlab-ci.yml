@@ -15,5 +15,5 @@ test:
   tags:
     - docker
   script:
-    - apt update && apt install -y dbus-x11
+    - apt update && apt install -y dbus-x11 gnome-keyring
     - make test

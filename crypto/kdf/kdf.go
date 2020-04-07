@@ -7,6 +7,12 @@ import (
 	"golang.org/x/crypto/blake2b"
 )
 
+const (
+	KeySize256 = 32
+	KeySize384 = 48
+	KeySize512 = 64
+)
+
 // DeriveFromPassword derives a key from a human provided password using the argon2id Key Derivation
 // Function
 func DeriveFromPassword(password, salt []byte, keyLen uint32) ([]byte, error) {
