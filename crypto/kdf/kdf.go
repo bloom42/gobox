@@ -29,8 +29,8 @@ func DeriveFromPassword(password, salt []byte, keyLen uint32) ([]byte, error) {
 
 // DeriveFromKey derives a key from a high entropy key using the blake2b function
 func DeriveFromKey(key, context []byte, keyLen uint8) ([]byte, error) {
-	if keyLen > 64 {
-		return nil, errors.New("Invalid keylen parameter. Must be inferior or equal to 64")
+	if keyLen < 1 || keyLen > 64 {
+		return nil, errors.New("keyLen must be between 1 and 64")
 	}
 
 	blake2bHash, err := blake2b.New(int(keyLen), nil)

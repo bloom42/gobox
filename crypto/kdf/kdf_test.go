@@ -31,6 +31,16 @@ func TestDeriveFromKeyKeyLen(t *testing.T) {
 		t.Error("Accept invalid keyLen")
 	}
 
+	_, err = DeriveFromKey(key, context, 0)
+	if err == nil {
+		t.Error("Accept invalid keyLen")
+	}
+
+	_, err = DeriveFromKey(key, context, 1)
+	if err != nil {
+		t.Error("Reject valid keyLen")
+	}
+
 	_, err = DeriveFromKey(key, context, 64)
 	if err != nil {
 		t.Error("Reject valid keyLen")
