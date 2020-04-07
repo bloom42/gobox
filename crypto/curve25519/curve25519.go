@@ -7,6 +7,11 @@ import (
 	"golang.org/x/crypto/curve25519"
 )
 
+const (
+	// KeySize is the size of both private and public keys
+	KeySize = curve25519.ScalarSize
+)
+
 func NewKeyPair() (publicKey, privateKey []byte, err error) {
 	privateKey = make([]byte, curve25519.ScalarSize)
 
