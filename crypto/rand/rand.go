@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/hex"
+	"io"
 	"math/big"
 )
 
@@ -59,4 +60,8 @@ func TokenHex(n uint64) (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(data), nil
+}
+
+func Reader() io.Reader {
+	return rand.Reader
 }
