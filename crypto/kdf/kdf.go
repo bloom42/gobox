@@ -38,5 +38,6 @@ func DeriveFromKey(key, context []byte, keyLen uint8) ([]byte, error) {
 		return nil, err
 	}
 
-	return blake2bHash.Sum(key), nil
+	blake2bHash.Write(key)
+	return blake2bHash.Sum(context), nil
 }
