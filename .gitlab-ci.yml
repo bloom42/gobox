@@ -15,4 +15,5 @@ test:
   tags:
     - docker
   script:
+    - apt install -y dbus-x11
     - go test ./...
