@@ -2,7 +2,6 @@ package kdf
 
 import (
 	"errors"
-	"hash"
 
 	"golang.org/x/crypto/argon2"
 	"golang.org/x/crypto/blake2b"
@@ -11,7 +10,7 @@ import (
 // DeriveFromPassword derives a key from a human provided password using the argon2id Key Derivation
 // Function
 func DeriveFromPassword(password, salt []byte, keyLen uint32) ([]byte, error) {
-	var time uint32 = 3
+	var time uint32 = 2
 	var memory uint32 = 32 * 1024
 	var threads uint8 = 4
 
@@ -23,23 +22,12 @@ func DeriveFromPassword(password, salt []byte, keyLen uint32) ([]byte, error) {
 }
 
 // DeriveFromKey derives a key from a high entropy key using the blake2b function
-func DeriveFromKey(key []byte, keyLen int) ([]byte, error) {
-	var err error
-	var blake2bHash hash.Hash
-
-	if keyLen != blake2b.Size && keyLen != blake2b.Size384 && keyLen != blake2b.Size256 {
-		return nil, errors.New("Invalid keyLen parameter. Must be 32, 48 or 64")
+func DeriveFromKey(key []byte, keyLen uint8) ([]byte, error) {
+	if keyLen > 64 {
+		return nil, errors.New("Invalid keylen parameter. Must be inferior or equal to 64")
 	}
 
-	if keyLen == blake2b.Size256 {
-		blake2bHash, err = blake2b.New256(nil)
-	} else if keyLen == blake2b.Size384 {
-		blake2bHash, err = blake2b.New384(nil)
-	} else if keyLen == blake2b.Size384 {
-		blake2bHash, err = blake2b.New512(nil)
-	} else {
-		err = errors.New("Invalid keyLen parameter. Must be 32, 48 or 64")
-	}
+	blake2bHash, err := blake2b.New(int(keyLen), nil)
 	if err != nil {
 		return nil, err
 	}
