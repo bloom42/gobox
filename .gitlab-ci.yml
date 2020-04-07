@@ -15,5 +15,5 @@ test:
   tags:
     - docker
   script:
-    - apt update && apt install -y dbus-x11 gnome-keyring
+    - apt update && apt install -y dbus-x11 gnome-keyring libsecret-1-0
     - make test
