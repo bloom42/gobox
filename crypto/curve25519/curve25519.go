@@ -12,10 +12,11 @@ const (
 	KeySize = curve25519.ScalarSize
 )
 
+// NewKeyPair genrates a new private and public key pair using a secure random source
+// both keys are of `KeySize` size
 func NewKeyPair() (publicKey, privateKey []byte, err error) {
-	privateKey = make([]byte, curve25519.ScalarSize)
-
-	if _, err = rand.Reader().Read(privateKey); err != nil {
+	privateKey, err = rand.Bytes(KeySize)
+	if err != nil {
 		return nil, nil, fmt.Errorf("internal error: %v", err)
 	}
 	publicKey, err = curve25519.X25519(privateKey, curve25519.Basepoint)
