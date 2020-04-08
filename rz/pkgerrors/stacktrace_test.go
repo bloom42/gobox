@@ -5,8 +5,8 @@ import (
 	"regexp"
 	"testing"
 
-	"gitlab.com/bloom42/lily/rz"
 	"github.com/pkg/errors"
+	"gitlab.com/bloom42/lily/rz"
 )
 
 func TestLogStack(t *testing.T) {
