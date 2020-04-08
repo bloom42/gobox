@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	// KeySize is the size of both private and public keys
+	// KeySize is the size of both private and public keys, in bytes
 	KeySize = curve25519.ScalarSize
 )
 
