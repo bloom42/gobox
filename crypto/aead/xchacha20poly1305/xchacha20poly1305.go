@@ -2,7 +2,9 @@ package xchacha20poly1305
 
 import (
 	"crypto/cipher"
+	"io"
 
+	"gitlab.com/bloom42/lily/crypto/rand"
 	"golang.org/x/crypto/chacha20poly1305"
 )
 
@@ -14,6 +16,28 @@ const (
 	// variant of this AEAD, in bytes.
 	NonceSize = chacha20poly1305.NonceSizeX
 )
+
+// NewKey generates a new random secret key.
+func NewKey() (*[KeySize]byte, error) {
+	key := new([KeySize]byte)
+	_, err := io.ReadFull(rand.Reader(), key[:])
+	if err != nil {
+		return nil, err
+	}
+
+	return key, nil
+}
+
+// NewNonce generates a new random nonce.
+func NewNonce() (*[NonceSize]byte, error) {
+	nonce := new([NonceSize]byte)
+	_, err := io.ReadFull(rand.Reader(), nonce[:])
+	if err != nil {
+		return nil, err
+	}
+
+	return nonce, nil
+}
 
 // New returns a XChaCha20-Poly1305 AEAD that uses the given 256-bit key.
 //

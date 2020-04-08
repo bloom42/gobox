@@ -59,6 +59,7 @@ const (
 func Precompute(peersPublicKey, privateKey [lilycurve25519.KeySize]byte) (sharedKey [xchacha20poly1305.KeySize]byte) {
 	curve25519.ScalarMult(&sharedKey, &privateKey, &peersPublicKey)
 	return sharedKey
+	// 	return curve25519.X25519(privateKey, peersPublicKey)
 	// salsa.HSalsa20(sharedKey, &zeros, sharedKey, &salsa.Sigma)
 }
 
