@@ -7,7 +7,7 @@ import (
 
 const (
 	// KeySize is the size of both private and public keys, in bytes.
-	KeySize = curve25519.ScalarSize
+	KeySize = curve25519.PointSize
 )
 
 // NewKeyPair genrates a new private and public key pair using a secure random source
