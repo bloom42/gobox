@@ -15,7 +15,7 @@ const (
 	NonceSize = chacha20poly1305.NonceSizeX
 )
 
-//  NewX returns a XChaCha20-Poly1305 AEAD that uses the given 256-bit key.
+// New returns a XChaCha20-Poly1305 AEAD that uses the given 256-bit key.
 //
 // XChaCha20-Poly1305 is a ChaCha20-Poly1305 variant that takes a longer nonce, suitable to be
 // generated randomly without risk of collisions. It should be preferred when nonce uniqueness cannot
