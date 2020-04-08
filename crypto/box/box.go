@@ -30,7 +30,7 @@ Thus large amounts of data should be chunked so that each message is small.
 (Each message still needs a unique nonce.) If in doubt, 16KB is a reasonable
 chunk size.
 
-This package is a fork of NaCl: "golang.org/x/crypto/nacl" to replace XSalsa20 by XChaCha20.
+This package is a fork of NaCl: "golang.org/x/crypto/nacl" replacing XSalsa20 by XChaCha20.
 */
 package box // import "gitlab.com/bloom42/lily/crypto/box"
 
