@@ -1,3 +1,4 @@
+// Package rand is deprecated. Please use gitlab.com/bloom42.lily/crypto instead
 package rand
 
 import (
