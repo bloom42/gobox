@@ -21,6 +21,16 @@ const (
 // PublicKey is the type of Ed25519 public keys.
 type PublicKey ed25519.PublicKey
 
+// Verify reports whether sig is a valid signature of message by publicKey.
+// returns true if signature is valid. false otherwise.
+func (public PublicKey) Verify(message, signature []byte) (bool, error) {
+	if len(public) != PublicKeySize {
+		return false, errors.New("ed25519: Invalid public key size")
+	}
+
+	return ed25519.Verify(ed25519.PublicKey(public), message, signature), nil
+}
+
 // PrivateKey is the type of Ed25519 private keys. It implements crypto.Signer.
 type PrivateKey ed25519.PrivateKey
 
