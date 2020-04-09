@@ -1,3 +1,6 @@
+// Package ed25519 is a wrapped for Go's standard library package "crypto/ed25519" with a cleaner and
+// simpler interface. It also add sone helper function to convert a Ed25519 keypair to a Curve25519
+// keypair
 package ed25519
 
 import (
