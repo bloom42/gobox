@@ -95,7 +95,7 @@ func (priv PrivateKey) Sign(rand io.Reader, message []byte, opts crypto.SignerOp
 
 // ToCurve25519PrivateKey returns a corresponding Curve25519 private key.
 //
-// See here for more details: https://blog.filippo.io/using-ed25519-keys-for-encryption/
+// See here for more details: https://blog.filippo.io/using-ed25519-keys-for-encryption
 func (priv PrivateKey) ToCurve25519PrivateKey() []byte {
 	// took from https://github.com/FiloSottile/age/blob/bbab440e198a4d67ba78591176c7853e62d29e04/internal/age/ssh.go#L289
 	h := sha512.New()
