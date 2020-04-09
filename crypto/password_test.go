@@ -1,4 +1,4 @@
-package argon2id
+package crypto
 
 import (
 	"regexp"
