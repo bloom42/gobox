@@ -11,6 +11,7 @@
 // Only th efunction `HashPassword` should be used for password hashing.
 //
 // AEAD
+//
 // AEAD (Authenticated Encryption with Associated Data) is used for secret key (symmetric) cryptography.
 //
 // Hash
