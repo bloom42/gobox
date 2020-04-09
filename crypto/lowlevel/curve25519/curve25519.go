@@ -1,7 +1,7 @@
 package curve25519
 
 import (
-	"gitlab.com/bloom42/lily/crypto/rand"
+	"gitlab.com/bloom42/lily/crypto"
 	"golang.org/x/crypto/curve25519"
 )
 
@@ -13,7 +13,7 @@ const (
 // NewKeyPair genrates a new private and public key pair using a secure random source
 // both keys are of `KeySize` size
 func NewKeyPair() (publicKey, privateKey *[KeySize]byte, err error) {
-	_, err = rand.Reader().Read(privateKey[:])
+	_, err = crypto.RandReader().Read(privateKey[:])
 	if err != nil {
 		return
 	}
