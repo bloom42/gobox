@@ -17,5 +17,4 @@
 //
 // hash functions (`Hash{256,384,512}`, `NewHash`) should be used to hashs files or other kind of data.
 // NOT FOR PASSWORD.
-
 package crypto
