@@ -41,6 +41,7 @@ func (public PublicKey) Verify(message, signature []byte) (bool, error) {
 var curve25519P, _ = new(big.Int).SetString("57896044618658097711785492504343953926634992332820282019728792003956564819949", 10)
 
 // ToCurve25519PublicKey returns the corresponding Curve25519 public key.
+//
 // See here for more details: https://blog.filippo.io/using-ed25519-keys-for-encryption
 func (public PublicKey) ToCurve25519PublicKey() []byte {
 	// taken from https://github.com/FiloSottile/age/blob/f0f8092d60bb96737fa096c29ec6d8adb5810390/internal/age/ssh.go#L174
