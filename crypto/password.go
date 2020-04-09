@@ -89,11 +89,11 @@ func HashPassword(password []byte, params *HashPasswordParams) (hash string, err
 	return hash, nil
 }
 
-// VerifyPassword performs a constant-time comparison between a
+// VerifyPasswordHash performs a constant-time comparison between a
 // plain-text password and Argon2id hash, using the parameters and salt
 // contained in the hash. It returns true if they match, otherwise it returns
 // false.
-func VerifyPassword(password []byte, hash string) bool {
+func VerifyPasswordHash(password []byte, hash string) bool {
 	params, salt, key, err := decodePasswordHash(hash)
 	if err != nil {
 		return false
