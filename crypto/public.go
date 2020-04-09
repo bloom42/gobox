@@ -14,12 +14,18 @@ import (
 const (
 	// PublicKeySize is the size, in bytes, of public keys as used in this package.
 	PublicKeySize = ed25519.PublicKeySize
+
 	// PrivateKeySize is the size, in bytes, of private keys as used in this package.
 	PrivateKeySize = ed25519.PrivateKeySize
+
 	// SignatureSize is the size, in bytes, of signatures generated and verified by this package.
 	SignatureSize = ed25519.SignatureSize
+
 	// SeedSize is the size, in bytes, of private key seeds. These are the private key representations used by RFC 8032.
 	SeedSize = ed25519.SeedSize
+
+	// PrivateKeySignerOpts must be used for `PrivateKey.Sign`
+	PrivateKeySignerOpts = crypto.Hash(0)
 )
 
 // PublicKey is the type of Ed25519 public keys.
@@ -78,7 +84,7 @@ type PrivateKey ed25519.PrivateKey
 // Ed25519 performs two passes over messages to be signed and therefore cannot
 // handle pre-hashed messages. Thus opts.HashFunc() must return zero to
 // indicate the message hasn't been hashed. This can be achieved by passing
-// crypto.Hash(0) as the value for opts.
+// crypto.PrivateKeySignerOpts as the value for opts.
 func (priv PrivateKey) Sign(rand io.Reader, message []byte, opts crypto.SignerOpts) (signature []byte, err error) {
 	if len(priv) != PrivateKeySize {
 		return nil, errors.New("crpyto: Invalid private key size")
