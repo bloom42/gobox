@@ -51,6 +51,21 @@ func RandInt64(min, max int64) (int64, error) {
 	return n.Int64(), nil
 }
 
+// RandAlphabet returns a buffer a size n filled with random values taken from alphabet
+func RandAlphabet(alphabet []byte, n uint64) ([]byte, error) {
+	buffer := make([]byte, n)
+	alphabetLen := int64(len(alphabet))
+
+	for i := range buffer {
+		n, err := RandInt64(0, alphabetLen)
+		if err != nil {
+			return nil, err
+		}
+		buffer[i] = alphabet[n]
+	}
+	return buffer, nil
+}
+
 // RandReader returns a cryptographically secure source of entropy which implements the `io.Reader`
 // interface.
 func RandReader() io.Reader {

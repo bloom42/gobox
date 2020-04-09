@@ -31,19 +31,19 @@ func TestHashPassword(t *testing.T) {
 	}
 }
 
-func TestVerifyPassword(t *testing.T) {
+func TestVerifyPasswordHash(t *testing.T) {
 	hash, err := HashPassword([]byte("pa$$word"), DefaultHashPasswordParams)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	match := VerifyPassword([]byte("pa$$word"), hash)
+	match := VerifyPasswordHash([]byte("pa$$word"), hash)
 
 	if !match {
 		t.Error("expected password and hash to match")
 	}
 
-	match = VerifyPassword([]byte("otherPa$$word"), hash)
+	match = VerifyPasswordHash([]byte("otherPa$$word"), hash)
 
 	if match {
 		t.Error("expected password and hash to not match")
