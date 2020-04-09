@@ -4,7 +4,7 @@ import (
 	"crypto/cipher"
 	"io"
 
-	"gitlab.com/bloom42/lily/crypto/rand"
+	"gitlab.com/bloom42/lily/crypto/lowlevel/rand"
 	"golang.org/x/crypto/chacha20poly1305"
 )
 

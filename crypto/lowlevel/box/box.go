@@ -35,8 +35,8 @@ This package is a fork of NaCl: "golang.org/x/crypto/nacl" replacing XSalsa20 by
 package box // import "gitlab.com/bloom42/lily/crypto/box"
 
 import (
-	"gitlab.com/bloom42/lily/crypto/aead/xchacha20poly1305"
-	lilycurve25519 "gitlab.com/bloom42/lily/crypto/curve25519"
+	"gitlab.com/bloom42/lily/crypto/lowlevel/aead/xchacha20poly1305"
+	lilycurve25519 "gitlab.com/bloom42/lily/crypto/lowlevel/curve25519"
 	"golang.org/x/crypto/curve25519"
 	"golang.org/x/crypto/nacl/secretbox"
 )
