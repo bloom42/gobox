@@ -3,8 +3,11 @@ package ed25519
 import (
 	"crypto"
 	"crypto/ed25519"
+	"crypto/sha512"
 	"errors"
 	"io"
+
+	"golang.org/x/crypto/curve25519"
 )
 
 const (
@@ -45,6 +48,27 @@ func (priv PrivateKey) Sign(rand io.Reader, message []byte, opts crypto.SignerOp
 	}
 
 	return ed25519.Sign(ed25519.PrivateKey(priv), message), nil
+}
+
+// ToCurve25519PrivateKey returns a corresponding Curve25519 private key
+// see here for more details: https://blog.filippo.io/using-ed25519-keys-for-encryption/
+func (priv PrivateKey) ToCurve25519PrivateKey() []byte {
+	// took from https://github.com/FiloSottile/age/blob/bbab440e198a4d67ba78591176c7853e62d29e04/internal/age/ssh.go#L289
+	h := sha512.New()
+	h.Write(ed25519.PrivateKey(priv).Seed())
+	out := h.Sum(nil)
+	return out[:curve25519.ScalarSize]
+}
+
+// Public returns the PublicKey corresponding to priv.
+func (priv PrivateKey) Public() crypto.PublicKey {
+	return ed25519.PrivateKey(priv).Public()
+}
+
+// Seed returns the private key seed corresponding to priv. It is provided for interoperability
+// with RFC 8032. RFC 8032's private keys correspond to seeds in this package.
+func (priv PrivateKey) Seed() []byte {
+	return ed25519.PrivateKey(priv).Seed()
 }
 
 // GenerateKeyPair generates a public/private key pair using entropy from rand.
