@@ -2,8 +2,6 @@ package crypto
 
 import (
 	"crypto/cipher"
-	"crypto/rand"
-	"io"
 
 	"golang.org/x/crypto/chacha20poly1305"
 )
@@ -18,25 +16,13 @@ const (
 )
 
 // NewAEADKey generates a new random secret key.
-func NewAEADKey() (*[AEADKeySize]byte, error) {
-	key := new([AEADKeySize]byte)
-	_, err := io.ReadFull(rand.Reader, key[:])
-	if err != nil {
-		return nil, err
-	}
-
-	return key, nil
+func NewAEADKey() ([]byte, error) {
+	return RandBytes(AEADKeySize)
 }
 
 // NewAEADNonce generates a new random nonce.
-func NewAEADNonce() (*[AEADNonceSize]byte, error) {
-	nonce := new([AEADNonceSize]byte)
-	_, err := io.ReadFull(rand.Reader, nonce[:])
-	if err != nil {
-		return nil, err
-	}
-
-	return nonce, nil
+func NewAEADNonce() ([]byte, error) {
+	return RandBytes(AEADNonceSize)
 }
 
 // NewAEAD returns a XChaCha20-Poly1305 AEAD that uses the given 256-bit key.
