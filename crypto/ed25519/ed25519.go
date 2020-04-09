@@ -40,8 +40,8 @@ func (public PublicKey) Verify(message, signature []byte) (bool, error) {
 
 var curve25519P, _ = new(big.Int).SetString("57896044618658097711785492504343953926634992332820282019728792003956564819949", 10)
 
-// ToCurve25519PublicKey returns the corresponding Curve25519 public key
-// see here for more details: https://blog.filippo.io/using-ed25519-keys-for-encryption/
+// ToCurve25519PublicKey returns the corresponding Curve25519 public key.
+// See here for more details: https://blog.filippo.io/using-ed25519-keys-for-encryption
 func (public PublicKey) ToCurve25519PublicKey() []byte {
 	// taken from https://github.com/FiloSottile/age/blob/f0f8092d60bb96737fa096c29ec6d8adb5810390/internal/age/ssh.go#L174
 
@@ -89,8 +89,9 @@ func (priv PrivateKey) Sign(rand io.Reader, message []byte, opts crypto.SignerOp
 	return ed25519.Sign(ed25519.PrivateKey(priv), message), nil
 }
 
-// ToCurve25519PrivateKey returns a corresponding Curve25519 private key
-// see here for more details: https://blog.filippo.io/using-ed25519-keys-for-encryption/
+// ToCurve25519PrivateKey returns a corresponding Curve25519 private key.
+//
+// See here for more details: https://blog.filippo.io/using-ed25519-keys-for-encryption/
 func (priv PrivateKey) ToCurve25519PrivateKey() []byte {
 	// took from https://github.com/FiloSottile/age/blob/bbab440e198a4d67ba78591176c7853e62d29e04/internal/age/ssh.go#L289
 	h := sha512.New()
