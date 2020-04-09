@@ -18,12 +18,12 @@ const (
 
 // DeriveKeyFromPassword derives a key from a human provided password using the argon2id Key Derivation
 // Function
-func DeriveKeyFromPassword(password, salt []byte, keyLen uint32) ([]byte, error) {
+func DeriveKeyFromPassword(password, salt []byte, keySize uint32) ([]byte, error) {
 	var time uint32 = 2
 	var memory uint32 = 32 * 1024
 	var threads uint8 = 4
 
-	key := argon2.IDKey(password, salt, time, memory, threads, keyLen)
+	key := argon2.IDKey(password, salt, time, memory, threads, keySize)
 	if key == nil {
 		return nil, errors.New("crypto: Deriving key from password")
 	}
@@ -31,12 +31,12 @@ func DeriveKeyFromPassword(password, salt []byte, keyLen uint32) ([]byte, error)
 }
 
 // DeriveKeyFromKey derives a key from a high entropy key using the blake2b function
-func DeriveKeyFromKey(key, context []byte, keyLen uint8) ([]byte, error) {
-	if keyLen < 1 || keyLen > 64 {
-		return nil, errors.New("crypto: keyLen must be between 1 and 64")
+func DeriveKeyFromKey(key, context []byte, keySize uint8) ([]byte, error) {
+	if keySize < 1 || keySize > 64 {
+		return nil, errors.New("crypto: keySize must be between 1 and 64")
 	}
 
-	blake2bHash, err := blake2b.New(int(keyLen), nil)
+	blake2bHash, err := blake2b.New(int(keySize), nil)
 	if err != nil {
 		return nil, err
 	}
