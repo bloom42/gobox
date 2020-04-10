@@ -42,6 +42,17 @@ func RandBytesBase64(n uint64) (string, error) {
 	return base64.StdEncoding.EncodeToString(data), nil
 }
 
+// RandBytesBase64URL returns securely generated random bytes encoded as a base64 string safe for URL
+// defined in RFC 4648..
+func RandBytesBase64URL(n uint64) (string, error) {
+	data, err := RandBytes(n)
+	if err != nil {
+		return "", err
+	}
+
+	return base64.URLEncoding.EncodeToString(data), nil
+}
+
 // RandInt64 returns a uniform random value in [min, max).
 func RandInt64(min, max int64) (int64, error) {
 	n, err := rand.Int(rand.Reader, big.NewInt(max-min))
