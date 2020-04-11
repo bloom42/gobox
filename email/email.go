@@ -52,7 +52,7 @@ func (email *Email) Bytes() ([]byte, error) {
 	buffer := bytes.NewBuffer([]byte{})
 	hasAttachements := len(email.Attachments) > 0
 	isAlternative := len(email.Text) > 0 && len(email.HTML) > 0
-	var writer *multipart.Writer
+	var multipartWriter *multipart.Writer
 
 	headers, err := email.headers()
 	if err != nil {
@@ -60,13 +60,13 @@ func (email *Email) Bytes() ([]byte, error) {
 	}
 
 	if hasAttachements || isAlternative {
-		writer = multipart.NewWriter(buffer)
+		multipartWriter = multipart.NewWriter(buffer)
 	}
 	switch {
 	case hasAttachements:
-		headers.Set("Content-Type", "multipart/mixed;\r\n boundary="+writer.Boundary())
+		headers.Set("Content-Type", "multipart/mixed;\r\n boundary="+multipartWriter.Boundary())
 	case isAlternative:
-		headers.Set("Content-Type", "multipart/alternative;\r\n boundary="+writer.Boundary())
+		headers.Set("Content-Type", "multipart/alternative;\r\n boundary="+multipartWriter.Boundary())
 	case len(email.HTML) > 0:
 		headers.Set("Content-Type", "text/html; charset=UTF-8")
 		headers.Set("Content-Transfer-Encoding", "quoted-printable")
@@ -74,7 +74,7 @@ func (email *Email) Bytes() ([]byte, error) {
 		headers.Set("Content-Type", "text/plain; charset=UTF-8")
 		headers.Set("Content-Transfer-Encoding", "quoted-printable")
 	}
-
+	headersToBytes(buffer, headers)
 	_, err = io.WriteString(buffer, "\r\n")
 	if err != nil {
 		return nil, err
@@ -90,11 +90,11 @@ func (email *Email) Bytes() ([]byte, error) {
 			header := textproto.MIMEHeader{
 				"Content-Type": {"multipart/alternative;\r\n boundary=" + subWriter.Boundary()},
 			}
-			if _, err := writer.CreatePart(header); err != nil {
+			if _, err := multipartWriter.CreatePart(header); err != nil {
 				return nil, err
 			}
 		} else {
-			subWriter = writer
+			subWriter = multipartWriter
 		}
 		// Create the body sections
 		if len(email.Text) > 0 {
@@ -117,7 +117,7 @@ func (email *Email) Bytes() ([]byte, error) {
 	}
 	// Create attachment part, if necessary
 	for _, a := range email.Attachments {
-		ap, err := writer.CreatePart(a.Header)
+		ap, err := multipartWriter.CreatePart(a.Header)
 		if err != nil {
 			return nil, err
 		}
@@ -125,7 +125,7 @@ func (email *Email) Bytes() ([]byte, error) {
 		base64Wrap(ap, a.Content)
 	}
 	if hasAttachements || isAlternative {
-		if err := writer.Close(); err != nil {
+		if err := multipartWriter.Close(); err != nil {
 			return nil, err
 		}
 	}
@@ -209,10 +209,10 @@ func Send(email Email, smtpHost string, smtpPort uint16, smtpAuth smtp.Auth) err
 	return smtp.SendMail(smtpAddress, smtpAuth, from.Address, to, rawEmail)
 }
 
-// headerToBytes renders "header" to "buff". If there are multiple values for a
+// headersToBytes renders "header" to "buff". If there are multiple values for a
 // field, multiple "Field: value\r\n" lines will be emitted.
-func headerToBytes(buff io.Writer, header textproto.MIMEHeader) {
-	for field, vals := range header {
+func headersToBytes(buff io.Writer, headers textproto.MIMEHeader) {
+	for field, vals := range headers {
 		for _, subval := range vals {
 			// bytes.Buffer.Write() never returns an error.
 			io.WriteString(buff, field)
