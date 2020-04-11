@@ -32,6 +32,8 @@ var ErrMissingBoundary = errors.New("No boundary found for multipart entity")
 // ErrMissingContentType is returned when there is no "Content-Type" header for a MIME entity
 var ErrMissingContentType = errors.New("No Content-Type found for MIME entity")
 
+var defaultMailer *Mailer
+
 // Email is an email...
 // either Text or HTML must be provided
 type Email struct {
@@ -174,10 +176,12 @@ type Attachment struct {
 	Content  []byte
 }
 
-// Send an Email
-func Send(email Email, smtpHost string, smtpPort uint16, smtpAuth smtp.Auth) error {
-	smtpAddress := fmt.Sprintf("%s:%d", smtpHost, smtpPort)
+type Mailer struct {
+	smtpAuth    smtp.Auth
+	smtpAddress string
+}
 
+func (mailer *Mailer) Send(email Email) error {
 	// Merge the To, Cc, and Bcc fields
 	to := make([]string, 0, len(email.To)+len(email.Cc)+len(email.Bcc))
 	to = append(to, email.To...)
@@ -206,7 +210,27 @@ func Send(email Email, smtpHost string, smtpPort uint16, smtpAuth smtp.Auth) err
 		return err
 	}
 
-	return smtp.SendMail(smtpAddress, smtpAuth, from.Address, to, rawEmail)
+	return smtp.SendMail(mailer.smtpAddress, mailer.smtpAuth, from.Address, to, rawEmail)
+}
+
+func NewMailer(smtpHost string, smtpPort uint16, smtpUsername, smtpPassword string) *Mailer {
+	smtpAuth := smtp.PlainAuth("", smtpUsername, smtpPassword, smtpHost)
+	return &Mailer{
+		smtpAuth:    smtpAuth,
+		smtpAddress: fmt.Sprintf("%s:%d", smtpHost, smtpPort),
+	}
+}
+
+func InitDefaultMailer(smtpHost string, smtpPort uint16, smtpUsername, smtpPassword string) {
+	defaultMailer = NewMailer(smtpHost, smtpPort, smtpUsername, smtpPassword)
+}
+
+// Send an email using the default mailer
+func Send(email Email) error {
+	if defaultMailer == nil {
+		return errors.New("email: defaultMailer has not been initialized")
+	}
+	return defaultMailer.Send(email)
 }
 
 // headersToBytes renders "header" to "buff". If there are multiple values for a
