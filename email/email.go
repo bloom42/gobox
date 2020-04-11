@@ -133,7 +133,7 @@ func (email *Email) Bytes() ([]byte, error) {
 }
 
 func (email *Email) headers() (textproto.MIMEHeader, error) {
-	res := make(textproto.MIMEHeader, len(email.Headers)+6)
+	res := make(textproto.MIMEHeader, 0, len(email.Headers)+6)
 	if email.Headers != nil {
 		for _, h := range []string{"Reply-To", "To", "Cc", "From", "Subject", "Date", "Message-Id", "MIME-Version"} {
 			if v, ok := email.Headers[h]; ok {
@@ -192,7 +192,7 @@ func Send(email Email, smtpHost string, smtpPort uint16, smtpAuth smtp.Auth) err
 	smtpAddress := fmt.Sprintf("%s:%d", smtpHost, smtpPort)
 
 	// Merge the To, Cc, and Bcc fields
-	to := make([]string, len(email.To)+len(email.Cc)+len(email.Bcc))
+	to := make([]string, 0, len(email.To)+len(email.Cc)+len(email.Bcc))
 	to = append(to, email.To...)
 	to = append(to, email.Bcc...)
 	to = append(to, email.Cc...)
