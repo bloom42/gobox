@@ -135,7 +135,7 @@ func (email *Email) Bytes() ([]byte, error) {
 func (email *Email) headers() (textproto.MIMEHeader, error) {
 	res := textproto.MIMEHeader{}
 
-	// Set headers if there are values.
+	// Set default headers
 	if _, ok := res["Reply-To"]; !ok && len(email.ReplyTo) > 0 {
 		res.Set("Reply-To", strings.Join(email.ReplyTo, ", "))
 	}
