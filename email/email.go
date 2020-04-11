@@ -133,14 +133,8 @@ func (email *Email) Bytes() ([]byte, error) {
 }
 
 func (email *Email) headers() (textproto.MIMEHeader, error) {
-	res := make(textproto.MIMEHeader, len(email.Headers)+6)
-	if email.Headers != nil {
-		for _, h := range []string{"Reply-To", "To", "Cc", "From", "Subject", "Date", "Message-Id", "MIME-Version"} {
-			if v, ok := email.Headers[h]; ok {
-				res[h] = v
-			}
-		}
-	}
+	res := textproto.MIMEHeader{}
+
 	// Set headers if there are values.
 	if _, ok := res["Reply-To"]; !ok && len(email.ReplyTo) > 0 {
 		res.Set("Reply-To", strings.Join(email.ReplyTo, ", "))
@@ -171,10 +165,10 @@ func (email *Email) headers() (textproto.MIMEHeader, error) {
 	if _, ok := res["MIME-Version"]; !ok {
 		res.Set("MIME-Version", "1.0")
 	}
-	for field, vals := range email.Headers {
-		if _, ok := res[field]; !ok {
-			res[field] = vals
-		}
+
+	// overwrite with user provided headers
+	for key, value := range email.Headers {
+		res[key] = value
 	}
 	return res, nil
 }
