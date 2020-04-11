@@ -136,35 +136,28 @@ func (email *Email) headers() (textproto.MIMEHeader, error) {
 	res := textproto.MIMEHeader{}
 
 	// Set default headers
-	if _, ok := res["Reply-To"]; !ok && len(email.ReplyTo) > 0 {
+	if len(email.ReplyTo) > 0 {
 		res.Set("Reply-To", strings.Join(email.ReplyTo, ", "))
 	}
-	if _, ok := res["To"]; !ok && len(email.To) > 0 {
+	if len(email.To) > 0 {
 		res.Set("To", strings.Join(email.To, ", "))
 	}
-	if _, ok := res["Cc"]; !ok && len(email.Cc) > 0 {
+	if len(email.Cc) > 0 {
 		res.Set("Cc", strings.Join(email.Cc, ", "))
 	}
-	if _, ok := res["Subject"]; !ok && email.Subject != "" {
-		res.Set("Subject", email.Subject)
+
+	res.Set("Subject", email.Subject)
+
+	id, err := generateMessageID()
+	if err != nil {
+		return nil, err
 	}
-	if _, ok := res["Message-Id"]; !ok {
-		id, err := generateMessageID()
-		if err != nil {
-			return nil, err
-		}
-		res.Set("Message-Id", id)
-	}
-	// Date and From are required headers.
-	if _, ok := res["From"]; !ok {
-		res.Set("From", email.From)
-	}
-	if _, ok := res["Date"]; !ok {
-		res.Set("Date", time.Now().Format(time.RFC1123Z))
-	}
-	if _, ok := res["MIME-Version"]; !ok {
-		res.Set("MIME-Version", "1.0")
-	}
+	res.Set("Message-Id", id)
+
+	// Set required headers.
+	res.Set("From", email.From)
+	res.Set("Date", time.Now().Format(time.RFC1123Z))
+	res.Set("MIME-Version", "1.0")
 
 	// overwrite with user provided headers
 	for key, value := range email.Headers {
