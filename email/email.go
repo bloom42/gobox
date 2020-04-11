@@ -192,7 +192,7 @@ type SMTPConfig struct {
 
 // Send an email
 func (mailer *Mailer) Send(email Email) error {
-	if len(email.HTML) == 0 || len(email.Text) == 0 {
+	if len(email.HTML) == 0 && len(email.Text) == 0 {
 		return errors.New("email: either HTML or Text must be provided")
 	}
 
