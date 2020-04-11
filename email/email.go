@@ -37,11 +37,11 @@ var defaultMailer *Mailer
 // Email is an email...
 // either Text or HTML must be provided
 type Email struct {
-	ReplyTo     []string
-	From        string
-	To          []string
-	Bcc         []string
-	Cc          []string
+	ReplyTo     []*mail.Address
+	From        *mail.Address
+	To          []*mail.Address
+	Bcc         []*mail.Address
+	Cc          []*mail.Address
 	Subject     string
 	Text        []byte // Plaintext message
 	HTML        []byte // Html message
@@ -139,13 +139,13 @@ func (email *Email) headers() (textproto.MIMEHeader, error) {
 
 	// Set default headers
 	if len(email.ReplyTo) > 0 {
-		res.Set("Reply-To", strings.Join(email.ReplyTo, ", "))
+		res.Set("Reply-To", strings.Join(mailAddressesToStrings(email.ReplyTo), ", "))
 	}
 	if len(email.To) > 0 {
-		res.Set("To", strings.Join(email.To, ", "))
+		res.Set("To", strings.Join(mailAddressesToStrings(email.To), ", "))
 	}
 	if len(email.Cc) > 0 {
-		res.Set("Cc", strings.Join(email.Cc, ", "))
+		res.Set("Cc", strings.Join(mailAddressesToStrings(email.Cc), ", "))
 	}
 
 	res.Set("Subject", email.Subject)
@@ -157,7 +157,7 @@ func (email *Email) headers() (textproto.MIMEHeader, error) {
 	res.Set("Message-Id", id)
 
 	// Set required headers.
-	res.Set("From", email.From)
+	res.Set("From", email.From.String())
 	res.Set("Date", time.Now().Format(time.RFC1123Z))
 	res.Set("MIME-Version", "1.0")
 
@@ -197,26 +197,14 @@ func (mailer *Mailer) Send(email Email) error {
 	}
 
 	// Merge the To, Cc, and Bcc fields
-	to := make([]string, 0, len(email.To)+len(email.Cc)+len(email.Bcc))
+	to := make([]*mail.Address, 0, len(email.To)+len(email.Cc)+len(email.Bcc))
 	to = append(to, email.To...)
 	to = append(to, email.Bcc...)
 	to = append(to, email.Cc...)
-	for i, recipient := range to {
-		recipientAddress, err := mail.ParseAddress(recipient)
-		if err != nil {
-			return fmt.Errorf("email: Invalid recipient address %v", err)
-		}
-		to[i] = recipientAddress.Address
-	}
 
 	// Check to make sure there is at least one recipient and one "From" address
-	if email.From == "" || len(to) == 0 {
+	if email.From == nil || len(to) == 0 {
 		return errors.New("email: Must specify at least one From address and one To address")
-	}
-
-	from, err := mail.ParseAddress(email.From)
-	if err != nil {
-		return fmt.Errorf("email: Invalid From address %v", err)
 	}
 
 	rawEmail, err := email.Bytes()
@@ -224,7 +212,7 @@ func (mailer *Mailer) Send(email Email) error {
 		return err
 	}
 
-	return smtp.SendMail(mailer.smtpAddress, mailer.smtpAuth, from.Address, to, rawEmail)
+	return smtp.SendMail(mailer.smtpAddress, mailer.smtpAuth, email.From.Address, mailAddressesToStrings(to), rawEmail)
 }
 
 func NewMailer(config SMTPConfig) *Mailer {
@@ -334,4 +322,13 @@ func base64Wrap(writer io.Writer, b []byte) {
 		out = append(out, "\r\n"...)
 		writer.Write(out)
 	}
+}
+
+func mailAddressesToStrings(addresses []*mail.Address) []string {
+	ret := make([]string, len(addresses))
+
+	for i, address := range addresses {
+		ret[i] = address.String()
+	}
+	return ret
 }
