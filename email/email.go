@@ -176,12 +176,26 @@ type Attachment struct {
 	Content  []byte
 }
 
+// Mailer are used to send email
 type Mailer struct {
 	smtpAuth    smtp.Auth
 	smtpAddress string
 }
 
+// SMTPConfig is used to configure an email
+type SMTPConfig struct {
+	Host     string
+	Port     uint16
+	Username string
+	Password string
+}
+
+// Send an email
 func (mailer *Mailer) Send(email Email) error {
+	if len(email.HTML) == 0 || len(email.Text) == 0 {
+		return errors.New("email: either HTML or Text must be provided")
+	}
+
 	// Merge the To, Cc, and Bcc fields
 	to := make([]string, 0, len(email.To)+len(email.Cc)+len(email.Bcc))
 	to = append(to, email.To...)
@@ -213,16 +227,16 @@ func (mailer *Mailer) Send(email Email) error {
 	return smtp.SendMail(mailer.smtpAddress, mailer.smtpAuth, from.Address, to, rawEmail)
 }
 
-func NewMailer(smtpHost string, smtpPort uint16, smtpUsername, smtpPassword string) *Mailer {
-	smtpAuth := smtp.PlainAuth("", smtpUsername, smtpPassword, smtpHost)
+func NewMailer(config SMTPConfig) *Mailer {
+	smtpAuth := smtp.PlainAuth("", config.Username, config.Password, config.Host)
 	return &Mailer{
 		smtpAuth:    smtpAuth,
-		smtpAddress: fmt.Sprintf("%s:%d", smtpHost, smtpPort),
+		smtpAddress: fmt.Sprintf("%s:%d", config.Host, config.Port),
 	}
 }
 
-func InitDefaultMailer(smtpHost string, smtpPort uint16, smtpUsername, smtpPassword string) {
-	defaultMailer = NewMailer(smtpHost, smtpPort, smtpUsername, smtpPassword)
+func InitDefaultMailer(config SMTPConfig) {
+	defaultMailer = NewMailer(config)
 }
 
 // Send an email using the default mailer
