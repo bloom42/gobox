@@ -212,7 +212,12 @@ func (mailer *Mailer) Send(email Email) error {
 		return err
 	}
 
-	return smtp.SendMail(mailer.smtpAddress, mailer.smtpAuth, email.From.Address, mailAddressesToStrings(to), rawEmail)
+	toAddresses := make([]string, len(to))
+	for i, recipient := range to {
+		toAddresses[i] = recipient.Address
+	}
+
+	return smtp.SendMail(mailer.smtpAddress, mailer.smtpAuth, email.From.Address, toAddresses, rawEmail)
 }
 
 func NewMailer(config SMTPConfig) *Mailer {
