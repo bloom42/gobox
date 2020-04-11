@@ -133,7 +133,7 @@ func (email *Email) Bytes() ([]byte, error) {
 }
 
 func (email *Email) headers() (textproto.MIMEHeader, error) {
-	res := make(textproto.MIMEHeader, 0, len(email.Headers)+6)
+	res := make(textproto.MIMEHeader, len(email.Headers)+6)
 	if email.Headers != nil {
 		for _, h := range []string{"Reply-To", "To", "Cc", "From", "Subject", "Date", "Message-Id", "MIME-Version"} {
 			if v, ok := email.Headers[h]; ok {
