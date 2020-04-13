@@ -17,5 +17,6 @@ func TestZeroize(t *testing.T) {
 }
 
 func TestZeroizeNil(t *testing.T) {
+	// must not panic
 	Zeroize(nil)
 }
