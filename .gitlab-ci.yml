@@ -16,4 +16,5 @@ test:
     - docker
   script:
     - apt update && apt install -y dbus-x11 gnome-keyring libsecret-1-0
+    - dbus-launch /usr/bin/python -c "import gnomekeyring;gnomekeyring.create_sync('login', '');"
     - make test
