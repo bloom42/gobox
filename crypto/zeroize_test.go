@@ -15,3 +15,7 @@ func TestZeroize(t *testing.T) {
 		}
 	}
 }
+
+func TestZeroizeNil(t *testing.T) {
+	Zeroize(nil)
+}
