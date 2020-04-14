@@ -1,0 +1,5 @@
+.env
+tmp/
+data/
+main.go
+btc/testdata/
