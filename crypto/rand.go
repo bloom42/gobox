@@ -2,8 +2,6 @@ package crypto
 
 import (
 	"crypto/rand"
-	"encoding/base64"
-	"encoding/hex"
 	"io"
 	"math/big"
 )
@@ -21,36 +19,6 @@ func RandBytes(n uint64) ([]byte, error) {
 	}
 
 	return b, nil
-}
-
-// RandBytesHex returns securely generated random bytes encoded as a hex string.
-func RandBytesHex(n uint64) (string, error) {
-	data, err := RandBytes(n)
-	if err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(data), nil
-}
-
-// RandBytesBase64 returns securely generated random bytes encoded as a standard base64 string.
-func RandBytesBase64(n uint64) (string, error) {
-	data, err := RandBytes(n)
-	if err != nil {
-		return "", err
-	}
-
-	return base64.StdEncoding.EncodeToString(data), nil
-}
-
-// RandBytesBase64URL returns securely generated random bytes encoded as a base64 string safe for URL
-// defined in RFC 4648..
-func RandBytesBase64URL(n uint64) (string, error) {
-	data, err := RandBytes(n)
-	if err != nil {
-		return "", err
-	}
-
-	return base64.URLEncoding.EncodeToString(data), nil
 }
 
 // RandInt64 returns a uniform random value in [min, max).
