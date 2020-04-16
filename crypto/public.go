@@ -97,7 +97,7 @@ func (priv PrivateKey) Sign(rand io.Reader, message []byte, opts crypto.SignerOp
 //
 // See here for more details: https://blog.filippo.io/using-ed25519-keys-for-encryption
 func (priv PrivateKey) ToCurve25519PrivateKey() []byte {
-	// took from https://github.com/FiloSottile/age/blob/bbab440e198a4d67ba78591176c7853e62d29e04/internal/age/ssh.go#L289
+	// taken from https://github.com/FiloSottile/age/blob/bbab440e198a4d67ba78591176c7853e62d29e04/internal/age/ssh.go#L289
 	h := sha512.New()
 	h.Write(ed25519.PrivateKey(priv).Seed())
 	out := h.Sum(nil)
