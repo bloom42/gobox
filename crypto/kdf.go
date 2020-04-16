@@ -36,11 +36,10 @@ func DeriveKeyFromKey(key, context []byte, keySize uint8) ([]byte, error) {
 		return nil, errors.New("crypto: keySize must be between 1 and 64")
 	}
 
-	blake2bHash, err := blake2b.New(int(keySize), nil)
+	blake2bHash, err := blake2b.New(int(keySize), context)
 	if err != nil {
 		return nil, err
 	}
 
-	blake2bHash.Write(key)
 	return blake2bHash.Sum(context), nil
 }
