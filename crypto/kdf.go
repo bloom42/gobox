@@ -31,7 +31,7 @@ func DeriveKeyFromPassword(password, salt []byte, keySize uint32) ([]byte, error
 }
 
 // DeriveKeyFromKey derives a key from a high entropy key using the blake2b function
-func DeriveKeyFromKey(key, context []byte, keySize uint8) ([]byte, error) {
+func DeriveKeyFromKey(key, info []byte, keySize uint8) ([]byte, error) {
 	if keySize < 1 || keySize > 64 {
 		return nil, errors.New("crypto: keySize must be between 1 and 64")
 	}
@@ -41,6 +41,6 @@ func DeriveKeyFromKey(key, context []byte, keySize uint8) ([]byte, error) {
 		return nil, err
 	}
 
-	blake2bHash.Write(context)
+	blake2bHash.Write(info)
 	return blake2bHash.Sum(nil), nil
 }

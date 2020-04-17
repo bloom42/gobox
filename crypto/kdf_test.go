@@ -20,29 +20,29 @@ func TestKeySizes(t *testing.T) {
 func TestDeriveKeyFromKeyKeyLen(t *testing.T) {
 	var err error
 	key := []byte("some random data")
-	context := []byte("com.bloom42.lily")
+	info := []byte("com.bloom42.lily")
 
-	_, err = DeriveKeyFromKey(key, context, 128)
+	_, err = DeriveKeyFromKey(key, info, 128)
 	if err == nil {
 		t.Error("Accept invalid keyLen")
 	}
 
-	_, err = DeriveKeyFromKey(key, context, 65)
+	_, err = DeriveKeyFromKey(key, info, 65)
 	if err == nil {
 		t.Error("Accept invalid keyLen")
 	}
 
-	_, err = DeriveKeyFromKey(key, context, 0)
+	_, err = DeriveKeyFromKey(key, info, 0)
 	if err == nil {
 		t.Error("Accept invalid keyLen")
 	}
 
-	_, err = DeriveKeyFromKey(key, context, 1)
+	_, err = DeriveKeyFromKey(key, info, 1)
 	if err != nil {
 		t.Error("Reject valid keyLen")
 	}
 
-	_, err = DeriveKeyFromKey(key, context, 64)
+	_, err = DeriveKeyFromKey(key, info, 64)
 	if err != nil {
 		t.Error("Reject valid keyLen")
 	}
@@ -50,15 +50,15 @@ func TestDeriveKeyFromKeyKeyLen(t *testing.T) {
 
 func TestDeriveKeyFromKeyContext(t *testing.T) {
 	key := []byte("some random data")
-	context1 := []byte("com.bloom42.lily1")
-	context2 := []byte("com.bloom42.lily2")
+	info1 := []byte("com.bloom42.lily1")
+	info2 := []byte("com.bloom42.lily2")
 
-	subKey1, err := DeriveKeyFromKey(key, context1, KeySize512)
+	subKey1, err := DeriveKeyFromKey(key, info1, KeySize512)
 	if err != nil {
 		t.Error(err)
 	}
 
-	subKey2, err := DeriveKeyFromKey(key, context2, KeySize512)
+	subKey2, err := DeriveKeyFromKey(key, info2, KeySize512)
 	if err != nil {
 		t.Error(err)
 	}
@@ -67,7 +67,7 @@ func TestDeriveKeyFromKeyContext(t *testing.T) {
 		t.Error("subKey1 and subKey2 are equal")
 	}
 
-	subKey3, err := DeriveKeyFromKey(key, context1, KeySize512)
+	subKey3, err := DeriveKeyFromKey(key, info1, KeySize512)
 	if err != nil {
 		t.Error(err)
 	}
