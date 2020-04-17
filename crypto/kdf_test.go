@@ -1,6 +1,7 @@
 package crypto
 
 import (
+	"bytes"
 	"testing"
 )
 
@@ -44,5 +45,25 @@ func TestDeriveKeyFromKeyKeyLen(t *testing.T) {
 	_, err = DeriveKeyFromKey(key, context, 64)
 	if err != nil {
 		t.Error("Reject valid keyLen")
+	}
+}
+
+func TestDeriveKeyFromKeyContext(t *testing.T) {
+	key := []byte("some random data")
+	context1 := []byte("com.bloom42.lily1")
+	context2 := []byte("com.bloom42.lily2")
+
+	subKey1, err := DeriveKeyFromKey(key, context1, KeySize512)
+	if err != nil {
+		t.Error(err)
+	}
+
+	subKey2, err := DeriveKeyFromKey(key, context2, KeySize512)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if bytes.Compare(subKey1, subKey2) == 0 {
+		t.Error("subKey1 and subKey2 are equal")
 	}
 }
