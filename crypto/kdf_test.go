@@ -18,9 +18,11 @@ func TestKeySizes(t *testing.T) {
 }
 
 func TestDeriveKeyFromKeyKeyLen(t *testing.T) {
-	var err error
-	key := []byte("some random data")
 	info := []byte("com.bloom42.lily")
+	key, err := RandBytes(KeySize512)
+	if err != nil {
+		t.Error(err)
+	}
 
 	_, err = DeriveKeyFromKey(key, info, 128)
 	if err == nil {
@@ -49,16 +51,23 @@ func TestDeriveKeyFromKeyKeyLen(t *testing.T) {
 }
 
 func TestDeriveKeyFromKeyContext(t *testing.T) {
-	key := []byte("some random data")
 	info1 := []byte("com.bloom42.lily1")
 	info2 := []byte("com.bloom42.lily2")
-
-	subKey1, err := DeriveKeyFromKey(key, info1, KeySize512)
+	key1, err := RandBytes(KeySize512)
+	if err != nil {
+		t.Error(err)
+	}
+	key2, err := RandBytes(KeySize512)
 	if err != nil {
 		t.Error(err)
 	}
 
-	subKey2, err := DeriveKeyFromKey(key, info2, KeySize512)
+	subKey1, err := DeriveKeyFromKey(key1, info1, KeySize256)
+	if err != nil {
+		t.Error(err)
+	}
+
+	subKey2, err := DeriveKeyFromKey(key1, info2, KeySize256)
 	if err != nil {
 		t.Error(err)
 	}
@@ -67,12 +76,21 @@ func TestDeriveKeyFromKeyContext(t *testing.T) {
 		t.Error("subKey1 and subKey2 are equal")
 	}
 
-	subKey3, err := DeriveKeyFromKey(key, info1, KeySize512)
+	subKey3, err := DeriveKeyFromKey(key1, info1, KeySize256)
 	if err != nil {
 		t.Error(err)
 	}
 
 	if !bytes.Equal(subKey1, subKey3) {
 		t.Error("subKey1 and subKey3 are different")
+	}
+
+	subKey4, err := DeriveKeyFromKey(key2, info1, KeySize256)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if bytes.Equal(subKey1, subKey4) {
+		t.Error("subKey1 and subKey4 are equal")
 	}
 }
