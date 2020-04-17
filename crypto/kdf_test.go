@@ -63,7 +63,7 @@ func TestDeriveKeyFromKeyContext(t *testing.T) {
 		t.Error(err)
 	}
 
-	if bytes.Compare(subKey1, subKey2) == 0 {
+	if bytes.Equal(subKey1, subKey2) {
 		t.Error("subKey1 and subKey2 are equal")
 	}
 
@@ -72,7 +72,7 @@ func TestDeriveKeyFromKeyContext(t *testing.T) {
 		t.Error(err)
 	}
 
-	if bytes.Compare(subKey1, subKey3) != 0 {
+	if !bytes.Equal(subKey1, subKey3) {
 		t.Error("subKey1 and subKey3 are different")
 	}
 }
