@@ -66,4 +66,13 @@ func TestDeriveKeyFromKeyContext(t *testing.T) {
 	if bytes.Compare(subKey1, subKey2) == 0 {
 		t.Error("subKey1 and subKey2 are equal")
 	}
+
+	subKey3, err := DeriveKeyFromKey(key, context1, KeySize512)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if bytes.Compare(subKey1, subKey3) != 0 {
+		t.Error("subKey1 and subKey3 are different")
+	}
 }
