@@ -22,14 +22,35 @@ const (
 	KeySize4096 = 512
 )
 
+// DeriveKeyFromPasswordParams describes the input parameters used by the Argon2id algorithm.
+type DeriveKeyFromPasswordParams struct {
+	// The amount of memory used by the algorithm (in kibibytes).
+	Memory uint32
+
+	// The number of iterations over the memory.
+	Iterations uint32
+
+	// The number of threads (or lanes) used by the algorithm.
+	Parallelism uint8
+
+	// Size of the generated key. 32 bytes or more is recommended.
+	KeySize uint32
+}
+
+// DefaultDeriveKeyFromPasswordParams provides some sane default parameters for deriving keys passwords.
+// You are encouraged to change the Memory, Iterations and Parallelism parameters
+// to values appropriate for the environment that your code will be running in.
+var DefaultDeriveKeyFromPasswordParams = &DeriveKeyFromPasswordParams{
+	Memory:      64 * 1024,
+	Iterations:  5,
+	Parallelism: 2,
+	KeySize:     KeySize512,
+}
+
 // DeriveKeyFromPassword derives a key from a human provided password using the argon2id Key Derivation
 // Function
-func DeriveKeyFromPassword(password, salt []byte, keySize uint32) ([]byte, error) {
-	var time uint32 = 2
-	var memory uint32 = 32 * 1024
-	var threads uint8 = 4
-
-	key := argon2.IDKey(password, salt, time, memory, threads, keySize)
+func DeriveKeyFromPassword(password, salt []byte, params *DeriveKeyFromPasswordParams) ([]byte, error) {
+	key := argon2.IDKey(password, salt, params.Iterations, params.Memory, params.Parallelism, params.KeySize)
 	if key == nil {
 		return nil, errors.New("crypto: Deriving key from password")
 	}
