@@ -29,13 +29,13 @@ var (
 
 // DefaultHashPasswordParams provides some sane default parameters for hashing passwords.
 // You are encouraged to change the Memory, Iterations and Parallelism parameters
-// to values appropraite for the environment that your code will be running in.
+// to values appropriate for the environment that your code will be running in.
 var DefaultHashPasswordParams = &HashPasswordParams{
 	Memory:      64 * 1024,
-	Iterations:  3,
+	Iterations:  4,
 	Parallelism: 2,
-	SaltLength:  16,
-	KeyLength:   32,
+	SaltLength:  KeySize256,
+	KeyLength:   KeySize512,
 }
 
 // HashPasswordParams describes the input parameters used by the Argon2id algorithm. The
@@ -63,7 +63,7 @@ type HashPasswordParams struct {
 	// Length of the random salt. 16 bytes is recommended for password hashing.
 	SaltLength uint32
 
-	// Length of the generated key. 16 bytes or more is recommended.
+	// Length of the generated key. 32 bytes or more is recommended.
 	KeyLength uint32
 }
 
