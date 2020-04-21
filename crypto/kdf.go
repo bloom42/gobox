@@ -14,6 +14,12 @@ const (
 	KeySize384 = 48
 	// KeySize512 is the size in bytes of a 512 bits key
 	KeySize512 = 64
+	// KeySize1024 is the size in bytes of a 1024 bits key
+	KeySize1024 = 128
+	// KeySize2048 is the size in bytes of a 2048 bits key
+	KeySize2048 = 256
+	// KeySize4096 is the size in bytes of a 4096 bits key
+	KeySize4096 = 512
 )
 
 // DeriveKeyFromPassword derives a key from a human provided password using the argon2id Key Derivation

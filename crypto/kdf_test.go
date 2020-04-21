@@ -15,6 +15,15 @@ func TestKeySizes(t *testing.T) {
 	if KeySize512 != 64 {
 		t.Error("KeySize512 != 64")
 	}
+	if KeySize1024 != 128 {
+		t.Error("KeySize1024 != 128")
+	}
+	if KeySize2048 != 256 {
+		t.Error("KeySize2048 != 256")
+	}
+	if KeySize4096 != 512 {
+		t.Error("KeySize4096 != 512")
+	}
 }
 
 func TestDeriveKeyFromKeyKeyLen(t *testing.T) {
