@@ -21,8 +21,8 @@ const (
 // NewHash returns a new `hash.Hash` computing the BLAKE2b checksum with a custom length.
 // size can be a value between 1 and 64.
 // It is highly recommended to use values equal or greater than 32.
-func NewHash(size HashSize) (hash.Hash, error) {
-	return blake2b.New(int(size), nil)
+func NewHash(size HashSize, key []byte) (hash.Hash, error) {
+	return blake2b.New(int(size), key)
 }
 
 // Hash256 returns the BLAKE2b-256 checksum of the data.
