@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/matryer/is"
+	"gitlab.com/bloom42/lily/is"
 )
 
 func TestWithClient(t *testing.T) {
