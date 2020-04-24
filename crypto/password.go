@@ -32,7 +32,7 @@ var (
 // to values appropriate for the environment that your code will be running in.
 var DefaultHashPasswordParams = &HashPasswordParams{
 	Memory:      64 * 1024,
-	Iterations:  4,
+	Iterations:  3,
 	Parallelism: 2,
 	SaltLength:  KeySize256,
 	KeyLength:   KeySize512,
