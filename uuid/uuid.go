@@ -14,9 +14,14 @@ import (
 	"strings"
 )
 
+const (
+	Size       = 16
+	StringSize = 36
+)
+
 // A UUID is a 128 bit (16 byte) Universal Unique IDentifier as defined in RFC
 // 4122.
-type UUID [16]byte
+type UUID [Size]byte
 
 // A Version represents a UUID's version.
 type Version byte
@@ -165,6 +170,11 @@ func (uuid UUID) String() string {
 	var buf [36]byte
 	encodeHex(buf[:], uuid)
 	return string(buf[:])
+}
+
+// Bytes returns the bytes of the uuid
+func (uuid UUID) Bytes() []byte {
+	return uuid[:]
 }
 
 // URN returns the RFC 2141 URN form of uuid,
