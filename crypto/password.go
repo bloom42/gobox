@@ -34,7 +34,7 @@ var DefaultHashPasswordParams = &HashPasswordParams{
 	Memory:      64 * 1024,
 	Iterations:  3,
 	Parallelism: 2,
-	SaltLength:  KeySize256,
+	SaltLength:  KeySize512,
 	KeyLength:   KeySize512,
 }
 
