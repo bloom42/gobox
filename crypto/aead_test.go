@@ -35,3 +35,26 @@ func TestNewAEADNonce(t *testing.T) {
 		t.Errorf("generated nonce have bad size (%d)", len(nonce))
 	}
 }
+
+func TestAEADSealDstNil(t *testing.T) {
+	data := []byte("this is a plaintext message")
+	ad := []byte("additional data")
+
+	nonce, err := NewAEADNonce()
+	if err != nil {
+		t.Error(err)
+	}
+	key, err := NewAEADKey()
+	if err != nil {
+		t.Error(err)
+	}
+	cipher, err := NewAEAD(key)
+	if err != nil {
+		t.Error(err)
+	}
+
+	ciphertext := cipher.Seal(nil, nonce, data, ad)
+	if ciphertext == nil {
+		t.Error("ciphertext is nil")
+	}
+}
