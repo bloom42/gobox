@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"gitlab.com/bloom42/lily/rz"
+	"gitlab.com/bloom42/lily/uuid"
 )
 
 // Key to use when setting the request ID.
@@ -202,11 +203,11 @@ func Handler(logger rz.Logger, options ...HandlerOption) func(next http.Handler)
 			}
 
 			if handler.requestIDField != "" {
-				// fmt.Println("in requestID")
 				requestID := ""
 				if rid, ok := r.Context().Value(RequestIDCtxKey).(string); ok {
-					// fmt.Println("in requestID 2")
 					requestID = rid
+				} else if rid, ok := r.Context().Value(RequestIDCtxKey).(uuid.UUID); ok {
+					requestID = rid.String()
 				}
 				handler.logger.Append(rz.String(handler.requestIDField, requestID))
 			}
