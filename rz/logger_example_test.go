@@ -1,7 +1,7 @@
 package rz_test
 
 import (
-	"gitlab.com/bloom42/lily/rz"
+	"gitlab.com/bloom42/gobox/rz"
 )
 
 func ExampleNew() {

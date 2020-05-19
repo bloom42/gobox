@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"gitlab.com/bloom42/lily/rz/internal/json"
+	"gitlab.com/bloom42/gobox/rz/internal/json"
 )
 
 // A Logger represents an active logging object that generates lines

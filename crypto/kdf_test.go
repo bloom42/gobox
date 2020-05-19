@@ -27,7 +27,7 @@ func TestKeySizes(t *testing.T) {
 }
 
 func TestDeriveKeyFromKeyKeyLen(t *testing.T) {
-	info := []byte("com.bloom42.lily")
+	info := []byte("com.bloom42.gobox")
 	key, err := RandBytes(KeySize512)
 	if err != nil {
 		t.Error(err)
@@ -60,8 +60,8 @@ func TestDeriveKeyFromKeyKeyLen(t *testing.T) {
 }
 
 func TestDeriveKeyFromKeyContext(t *testing.T) {
-	info1 := []byte("com.bloom42.lily1")
-	info2 := []byte("com.bloom42.lily2")
+	info1 := []byte("com.bloom42.gobox1")
+	info2 := []byte("com.bloom42.gobox2")
 	key1, err := RandBytes(KeySize512)
 	if err != nil {
 		t.Error(err)

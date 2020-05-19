@@ -3,8 +3,8 @@ package main
 import (
 	"os"
 
-	"gitlab.com/bloom42/lily/rz"
-	"gitlab.com/bloom42/lily/rz/log"
+	"gitlab.com/bloom42/gobox/rz"
+	"gitlab.com/bloom42/gobox/rz/log"
 )
 
 func main() {

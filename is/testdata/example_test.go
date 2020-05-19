@@ -7,7 +7,7 @@ package example
 import (
 	"testing"
 
-	"gitlab.com/bloom42/lily/is"
+	"gitlab.com/bloom42/gobox/is"
 )
 
 func TestSomething(t *testing.T) {

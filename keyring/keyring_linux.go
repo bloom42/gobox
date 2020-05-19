@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/godbus/dbus"
-	ss "gitlab.com/bloom42/lily/keyring/secretservice"
+	ss "gitlab.com/bloom42/gobox/keyring/secretservice"
 )
 
 type secretServiceProvider struct{}

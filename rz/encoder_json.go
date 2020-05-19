@@ -4,7 +4,7 @@ package rz
 // JSON encoded byte stream.
 
 import (
-	"gitlab.com/bloom42/lily/rz/internal/json"
+	"gitlab.com/bloom42/gobox/rz/internal/json"
 )
 
 var (

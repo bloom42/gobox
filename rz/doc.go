@@ -2,13 +2,13 @@
 //
 // A global Logger can be use for simple logging:
 //
-//     import "gitlab.com/bloom42/lily/rz/log"
+//     import "gitlab.com/bloom42/gobox/rz/log"
 //
 //     log.Info("hello world")
 //
 //     // Output: {"timestamp":"2019-02-07T09:30:07Z","level":"info","message":"hello world"}
 //
-// NOTE: To import the global logger, import the "log" subpackage "gitlab.com/bloom42/lily/rz/log".
+// NOTE: To import the global logger, import the "log" subpackage "gitlab.com/bloom42/gobox/rz/log".
 //
 // Fields can be added to log messages:
 //

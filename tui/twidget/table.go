@@ -1,7 +1,7 @@
 package twidget
 
 import (
-	"gitlab.com/bloom42/lily/tui"
+	"gitlab.com/bloom42/gobox/tui"
 )
 
 type TableParams struct {

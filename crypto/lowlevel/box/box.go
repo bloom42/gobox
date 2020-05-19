@@ -33,11 +33,11 @@ package box
 
 // This package is a fork of NaCl: "golang.org/x/crypto/nacl" replacing XSalsa20 by XChaCha20.
 // */
-// package box // import "gitlab.com/bloom42/lily/crypto/box"
+// package box // import "gitlab.com/bloom42/gobox/crypto/box"
 
 // import (
-// 	"gitlab.com/bloom42/lily/crypto"
-// 	lilycurve25519 "gitlab.com/bloom42/lily/crypto/lowlevel/curve25519"
+// 	"gitlab.com/bloom42/gobox/crypto"
+// 	goboxcurve25519 "gitlab.com/bloom42/gobox/crypto/lowlevel/curve25519"
 // 	"golang.org/x/crypto/curve25519"
 // 	"golang.org/x/crypto/nacl/secretbox"
 // )
@@ -57,7 +57,7 @@ package box
 // // and writes it to sharedKey. The shared key can be used with
 // // OpenAfterPrecomputation and SealAfterPrecomputation to speed up processing
 // // when using the same pair of keys repeatedly.
-// func Precompute(peersPublicKey, privateKey [lilycurve25519.KeySize]byte) (sharedKey [crypto.AEADKeySize]byte) {
+// func Precompute(peersPublicKey, privateKey [goboxcurve25519.KeySize]byte) (sharedKey [crypto.AEADKeySize]byte) {
 // 	curve25519.ScalarMult(&sharedKey, &privateKey, &peersPublicKey)
 // 	return sharedKey
 // 	// 	return curve25519.X25519(privateKey, peersPublicKey)
@@ -67,7 +67,7 @@ package box
 // // Seal appends an encrypted and authenticated copy of message to out, which
 // // will be Overhead bytes longer than the original and must not overlap it. The
 // // nonce must be unique for each distinct message for a given pair of keys.
-// func Seal(out, message []byte, nonce [crypto.AEADNonceSize]byte, peersPublicKey, privateKey [lilycurve25519.KeySize]byte) ([]byte, error) {
+// func Seal(out, message []byte, nonce [crypto.AEADNonceSize]byte, peersPublicKey, privateKey [goboxcurve25519.KeySize]byte) ([]byte, error) {
 // 	sharedKey := Precompute(peersPublicKey, privateKey)
 // 	cipher, err := crypto.NewAEAD(sharedKey[:])
 // 	if err != nil {
@@ -89,7 +89,7 @@ package box
 // // Open authenticates and decrypts a box produced by Seal and appends the
 // // message to out, which must not overlap box. The output will be Overhead
 // // bytes smaller than box.
-// func Open(out, ciphertext []byte, nonce [crypto.AEADNonceSize]byte, peersPublicKey, privateKey [lilycurve25519.KeySize]byte) ([]byte, error) {
+// func Open(out, ciphertext []byte, nonce [crypto.AEADNonceSize]byte, peersPublicKey, privateKey [goboxcurve25519.KeySize]byte) ([]byte, error) {
 // 	sharedKey := Precompute(peersPublicKey, privateKey)
 // 	cipher, err := crypto.NewAEAD(sharedKey[:])
 // 	if err != nil {

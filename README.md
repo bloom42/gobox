@@ -1,7 +1,6 @@
-<p align="center">
-  <h3 align="center">lily</h3>
-  <p align="center">The missing pieces of Go's standard library</p>
-</p>
+# gobox
+
+The missing pieces of Go's standard library
 
 
 ---------------------------------------------
