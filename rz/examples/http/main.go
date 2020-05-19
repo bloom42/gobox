@@ -7,10 +7,10 @@ import (
 	"os"
 
 	"github.com/go-chi/chi"
-	"github.com/google/uuid"
 	"gitlab.com/bloom42/gobox/rz"
 	"gitlab.com/bloom42/gobox/rz/log"
 	"gitlab.com/bloom42/gobox/rz/rzhttp"
+	"gitlab.com/bloom42/gobox/uuid"
 )
 
 func main() {
