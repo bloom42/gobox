@@ -159,20 +159,30 @@ func (priv PrivateKey) Seed() []byte {
 	return ed25519.PrivateKey(priv).Seed()
 }
 
-func (priv PrivateKey) Decrypt(ciphertext []byte, publicKey PublicKey) (plaintext []byte, err error) {
+func (priv PrivateKey) Decrypt(ciphertext []byte, publicKey PublicKey, nonce []byte) (plaintext []byte, err error) {
 	curve25519PublicKey := publicKey.ToCurve25519PublicKey()
 	curve25519PrivateKey := priv.ToCurve25519PrivateKey()
 	defer Zeroize(curve25519PrivateKey)
-
-	myPublicKey := priv.Public()
 
 	sharedSecret, err := curve25519.X25519(curve25519PrivateKey, curve25519PublicKey)
 	if err != nil {
 		return
 	}
 
-	// generate nonce
+	cipher, err := NewAEAD(sharedSecret)
+	if err != nil {
+		return
+	}
+
+	plaintext, err = cipher.Open(nil, nonce, ciphertext, nil)
+	return
+}
+
+func (priv PrivateKey) DecryptAnonymous(ciphertext []byte, publicKey PublicKey) (plaintext []byte, err error) {
 	var nonceMessage []byte
+	myPublicKey := priv.Public()
+
+	// generate nonce
 	nonceMessage = append(nonceMessage, []byte(myPublicKey)...)
 	nonceMessage = append(nonceMessage, []byte(publicKey)...)
 	hash, err := NewHash(AEADNonceSize, nil)
@@ -182,13 +192,7 @@ func (priv PrivateKey) Decrypt(ciphertext []byte, publicKey PublicKey) (plaintex
 	hash.Write(nonceMessage)
 	nonce := hash.Sum(nil)
 
-	cipher, err := NewAEAD(sharedSecret)
-	if err != nil {
-		return
-	}
-
-	plaintext, err = cipher.Open(nil, nonce, ciphertext, nil)
-	return
+	return priv.Decrypt(ciphertext, publicKey, nonce)
 }
 
 // GenerateKeyPair generates a public/private key pair using entropy from rand.
