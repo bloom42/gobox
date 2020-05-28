@@ -58,3 +58,27 @@ func TestAEADSealDstNil(t *testing.T) {
 		t.Error("ciphertext is nil")
 	}
 }
+
+func TestAEADEncryptDecrypt(t *testing.T) {
+	plaintext := []byte("this is a plaintext message")
+	ad := []byte("additional data")
+
+	key, err := NewAEADKey()
+	if err != nil {
+		t.Error(err)
+	}
+
+	cipherText, nonce, err := AEADEncrypt(key, plaintext, ad)
+	if err != nil {
+		t.Error(err)
+	}
+
+	plaintext2, err := AEADDecrypt(key, nonce, cipherText, ad)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if string(plaintext) != string(plaintext2) {
+		t.Errorf("bad plaintext while decrypting: %s, expedting: %s", string(plaintext2), string(plaintext))
+	}
+}

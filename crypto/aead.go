@@ -33,3 +33,27 @@ func NewAEADNonce() ([]byte, error) {
 func NewAEAD(key []byte) (cipher.AEAD, error) {
 	return chacha20poly1305.NewX(key)
 }
+
+// AEADEncrypt is an helper function to symetrically encrypt a piece of data using XChaCha20-Poly1305
+func AEADEncrypt(key, plaintext, additionalData []byte) (ciphertext, nonce []byte, err error) {
+	nonce, err = NewAEADNonce()
+	if err != nil {
+		return
+	}
+	cipher, err := NewAEAD(key)
+	if err != nil {
+		return
+	}
+	ciphertext = cipher.Seal(nil, nonce, plaintext, additionalData)
+	return
+}
+
+// AEADDecrypt is an helper function to symetrically  decrypt a piece of data using XChaCha20-Poly1305
+func AEADDecrypt(key, nonce, ciphertext, additionalData []byte) (plaintext []byte, err error) {
+	cipher, err := NewAEAD(key)
+	if err != nil {
+		return
+	}
+	plaintext, err = cipher.Open(nil, nonce, ciphertext, additionalData)
+	return
+}

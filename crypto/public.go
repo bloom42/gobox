@@ -77,6 +77,50 @@ func (public PublicKey) ToCurve25519PublicKey() []byte {
 	return out
 }
 
+// Encrypt convert the PublicKey to a `curve25519` public key using `ToCurve25519PublicKey`,
+// then perform a key exchange, then encrypt the message using XChaCha20-Poly1305
+func (public PublicKey) Encrypt(message []byte, privateKey PrivateKey, nonce []byte) (ciphertext []byte, err error) {
+	curve25519PublicKey := public.ToCurve25519PublicKey()
+	curve25519PrivateKey := privateKey.ToCurve25519PrivateKey()
+	defer Zeroize(curve25519PrivateKey)
+
+	sharedSecret, err := curve25519.X25519(curve25519PrivateKey, curve25519PublicKey)
+	defer Zeroize(sharedSecret)
+	if err != nil {
+		return
+	}
+
+	cipher, err := NewAEAD(sharedSecret)
+	if err != nil {
+		return
+	}
+
+	ciphertext = cipher.Seal(nil, nonce, message, nil)
+	return
+}
+
+func (public PublicKey) EncryptAnonymous(message []byte) (ciphertext []byte, ephemeralPublicKey PublicKey, err error) {
+	ephemeralPublicKey, ephemeralPrivateKey, err := GenerateKeyPair(RandReader())
+	defer Zeroize(ephemeralPrivateKey)
+	if err != nil {
+		return
+	}
+
+	// generate nonce
+	var nonceMessage []byte
+	nonceMessage = append(nonceMessage, []byte(public)...)
+	nonceMessage = append(nonceMessage, []byte(ephemeralPublicKey)...)
+	hash, err := NewHash(AEADNonceSize, nil)
+	if err != nil {
+		return
+	}
+	hash.Write(nonceMessage)
+	nonce := hash.Sum(nil)
+
+	ciphertext, err = public.Encrypt(message, ephemeralPrivateKey, nonce)
+	return
+}
+
 // PrivateKey is the type of Ed25519 private keys. It implements crypto.Signer.
 type PrivateKey ed25519.PrivateKey
 
@@ -97,7 +141,7 @@ func (priv PrivateKey) Sign(rand io.Reader, message []byte, opts crypto.SignerOp
 //
 // See here for more details: https://blog.filippo.io/using-ed25519-keys-for-encryption
 func (priv PrivateKey) ToCurve25519PrivateKey() []byte {
-	// taken from https://github.com/FiloSottile/age/blob/bbab440e198a4d67ba78591176c7853e62d29e04/internal/age/ssh.go#L289
+	// taken from https://github.com/FiloSottile/age/blob/292c3aaeea0695dbba356dfe18a70f10efb17d75/internal/agessh/agessh.go#L294
 	h := sha512.New()
 	h.Write(ed25519.PrivateKey(priv).Seed())
 	out := h.Sum(nil)
@@ -105,14 +149,46 @@ func (priv PrivateKey) ToCurve25519PrivateKey() []byte {
 }
 
 // Public returns the PublicKey corresponding to priv.
-func (priv PrivateKey) Public() crypto.PublicKey {
-	return ed25519.PrivateKey(priv).Public()
+func (priv PrivateKey) Public() PublicKey {
+	return PublicKey(ed25519.PrivateKey(priv).Public().(ed25519.PublicKey))
 }
 
 // Seed returns the private key seed corresponding to priv. It is provided for interoperability
 // with RFC 8032. RFC 8032's private keys correspond to seeds in this package.
 func (priv PrivateKey) Seed() []byte {
 	return ed25519.PrivateKey(priv).Seed()
+}
+
+func (priv PrivateKey) Decrypt(ciphertext []byte, publicKey PublicKey) (plaintext []byte, err error) {
+	curve25519PublicKey := publicKey.ToCurve25519PublicKey()
+	curve25519PrivateKey := priv.ToCurve25519PrivateKey()
+	defer Zeroize(curve25519PrivateKey)
+
+	myPublicKey := priv.Public()
+
+	sharedSecret, err := curve25519.X25519(curve25519PrivateKey, curve25519PublicKey)
+	if err != nil {
+		return
+	}
+
+	// generate nonce
+	var nonceMessage []byte
+	nonceMessage = append(nonceMessage, []byte(myPublicKey)...)
+	nonceMessage = append(nonceMessage, []byte(publicKey)...)
+	hash, err := NewHash(AEADNonceSize, nil)
+	if err != nil {
+		return
+	}
+	hash.Write(nonceMessage)
+	nonce := hash.Sum(nil)
+
+	cipher, err := NewAEAD(sharedSecret)
+	if err != nil {
+		return
+	}
+
+	plaintext, err = cipher.Open(nil, nonce, ciphertext, nil)
+	return
 }
 
 // GenerateKeyPair generates a public/private key pair using entropy from rand.

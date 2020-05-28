@@ -8,6 +8,10 @@ func TestConstantTimeCompare(t *testing.T) {
 	c := []byte("helloWarld")
 	d := []byte("helloWorl")
 
+	if !ConstantTimeCompare(a, a) {
+		t.Errorf("%s != %s", a, b)
+	}
+
 	if !ConstantTimeCompare(a, b) {
 		t.Errorf("%s != %s", a, b)
 	}
@@ -18,5 +22,17 @@ func TestConstantTimeCompare(t *testing.T) {
 
 	if ConstantTimeCompare(a, d) {
 		t.Errorf("%s == %s", a, d)
+	}
+
+	if ConstantTimeCompare(nil, a) {
+		t.Errorf("nil == %s", a)
+	}
+
+	if ConstantTimeCompare(a, nil) {
+		t.Errorf("%s == nil", a)
+	}
+
+	if !ConstantTimeCompare(nil, nil) {
+		t.Error("nil != nil")
 	}
 }
