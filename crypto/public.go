@@ -47,7 +47,7 @@ var curve25519P, _ = new(big.Int).SetString("57896044618658097711785492504343953
 //
 // See here for more details: https://blog.filippo.io/using-ed25519-keys-for-encryption
 func (public PublicKey) ToCurve25519PublicKey() []byte {
-	// taken from https://github.com/FiloSottile/age/blob/f0f8092d60bb96737fa096c29ec6d8adb5810390/internal/age/ssh.go#L174
+	// taken from https://github.com/FiloSottile/age/blob/master/internal/agessh/agessh.go#L179
 
 	// ed25519.PublicKey is a little endian representation of the y-coordinate,
 	// with the most significant bit set based on the sign of the x-coordinate.
