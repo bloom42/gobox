@@ -33,12 +33,12 @@ type PublicKey ed25519.PublicKey
 
 // Verify reports whether sig is a valid signature of message by publicKey.
 // returns true if signature is valid. false otherwise.
-func (public PublicKey) Verify(message, signature []byte) (bool, error) {
-	if len(public) != PublicKeySize {
+func (publicKey PublicKey) Verify(message, signature []byte) (bool, error) {
+	if len(publicKey) != PublicKeySize {
 		return false, errors.New("crypto: Invalid public key size")
 	}
 
-	return ed25519.Verify(ed25519.PublicKey(public), message, signature), nil
+	return ed25519.Verify(ed25519.PublicKey(publicKey), message, signature), nil
 }
 
 var curve25519P, _ = new(big.Int).SetString("57896044618658097711785492504343953926634992332820282019728792003956564819949", 10)
@@ -46,13 +46,13 @@ var curve25519P, _ = new(big.Int).SetString("57896044618658097711785492504343953
 // ToCurve25519PublicKey returns the corresponding Curve25519 public key.
 //
 // See here for more details: https://blog.filippo.io/using-ed25519-keys-for-encryption
-func (public PublicKey) ToCurve25519PublicKey() []byte {
+func (publicKey PublicKey) ToCurve25519PublicKey() []byte {
 	// taken from https://github.com/FiloSottile/age/blob/master/internal/agessh/agessh.go#L179
 
 	// ed25519.PublicKey is a little endian representation of the y-coordinate,
 	// with the most significant bit set based on the sign of the x-coordinate.
 	bigEndianY := make([]byte, PublicKeySize)
-	for i, b := range public {
+	for i, b := range publicKey {
 		bigEndianY[PublicKeySize-i-1] = b
 	}
 	bigEndianY[0] &= 0b0111_1111
@@ -78,13 +78,15 @@ func (public PublicKey) ToCurve25519PublicKey() []byte {
 }
 
 // Encrypt convert the PublicKey to a `curve25519` public key using `ToCurve25519PublicKey`,
-// then perform a key exchange, then encrypt the message using XChaCha20-Poly1305
-func (public PublicKey) Encrypt(message []byte, privateKey PrivateKey, nonce []byte) (ciphertext []byte, err error) {
-	curve25519PublicKey := public.ToCurve25519PublicKey()
-	curve25519PrivateKey := privateKey.ToCurve25519PrivateKey()
-	defer Zeroize(curve25519PrivateKey)
+// the privateKey to a `curve25519` prviate key using `ToCurve25519PrivateKey`,
+// then perform a x25519 key exchange, and finally encrypt the message using `XChaCha20-Poly1305` with
+// the shared secret as key and nonce as nonce.
+func (publicKey PublicKey) Encrypt(message []byte, fromPrivateKey PrivateKey, nonce []byte) (ciphertext []byte, err error) {
+	curve25519PublicKey := publicKey.ToCurve25519PublicKey()
+	curve25519FromPrivateKey := fromPrivateKey.ToCurve25519PrivateKey()
+	defer Zeroize(curve25519FromPrivateKey)
 
-	sharedSecret, err := curve25519.X25519(curve25519PrivateKey, curve25519PublicKey)
+	sharedSecret, err := curve25519.X25519(curve25519FromPrivateKey, curve25519PublicKey)
 	defer Zeroize(sharedSecret)
 	if err != nil {
 		return
@@ -99,7 +101,9 @@ func (public PublicKey) Encrypt(message []byte, privateKey PrivateKey, nonce []b
 	return
 }
 
-func (public PublicKey) EncryptAnonymous(message []byte) (ciphertext []byte, ephemeralPublicKey PublicKey, err error) {
+// EncryptAnonymous generates an ephemeral keyPair and `Encrypt` message using the public key,
+// the ephemeral privateKey and `blake2b(size=AEADNonceSize, message=ephemeralPublicKey || publicKey)` as nonce
+func (publicKey PublicKey) EncryptAnonymous(message []byte) (ciphertext []byte, ephemeralPublicKey PublicKey, err error) {
 	ephemeralPublicKey, ephemeralPrivateKey, err := GenerateKeyPair(RandReader())
 	defer Zeroize(ephemeralPrivateKey)
 	if err != nil {
@@ -108,8 +112,8 @@ func (public PublicKey) EncryptAnonymous(message []byte) (ciphertext []byte, eph
 
 	// generate nonce
 	var nonceMessage []byte
-	nonceMessage = append(nonceMessage, []byte(public)...)
 	nonceMessage = append(nonceMessage, []byte(ephemeralPublicKey)...)
+	nonceMessage = append(nonceMessage, []byte(publicKey)...)
 	hash, err := NewHash(AEADNonceSize, nil)
 	if err != nil {
 		return
@@ -117,7 +121,7 @@ func (public PublicKey) EncryptAnonymous(message []byte) (ciphertext []byte, eph
 	hash.Write(nonceMessage)
 	nonce := hash.Sum(nil)
 
-	ciphertext, err = public.Encrypt(message, ephemeralPrivateKey, nonce)
+	ciphertext, err = publicKey.Encrypt(message, ephemeralPrivateKey, nonce)
 	return
 }
 
@@ -129,42 +133,47 @@ type PrivateKey ed25519.PrivateKey
 // handle pre-hashed messages. Thus opts.HashFunc() must return zero to
 // indicate the message hasn't been hashed. This can be achieved by passing
 // crypto.PrivateKeySignerOpts as the value for opts.
-func (priv PrivateKey) Sign(rand io.Reader, message []byte, opts crypto.SignerOpts) (signature []byte, err error) {
-	if len(priv) != PrivateKeySize {
+func (privateKey PrivateKey) Sign(rand io.Reader, message []byte, opts crypto.SignerOpts) (signature []byte, err error) {
+	if len(privateKey) != PrivateKeySize {
 		return nil, errors.New("crpyto: Invalid private key size")
 	}
 
-	return ed25519.Sign(ed25519.PrivateKey(priv), message), nil
+	return ed25519.Sign(ed25519.PrivateKey(privateKey), message), nil
 }
 
 // ToCurve25519PrivateKey returns a corresponding Curve25519 private key.
 //
 // See here for more details: https://blog.filippo.io/using-ed25519-keys-for-encryption
-func (priv PrivateKey) ToCurve25519PrivateKey() []byte {
+func (privateKey PrivateKey) ToCurve25519PrivateKey() []byte {
 	// taken from https://github.com/FiloSottile/age/blob/292c3aaeea0695dbba356dfe18a70f10efb17d75/internal/agessh/agessh.go#L294
 	h := sha512.New()
-	h.Write(ed25519.PrivateKey(priv).Seed())
+	h.Write(ed25519.PrivateKey(privateKey).Seed())
 	out := h.Sum(nil)
 	return out[:curve25519.ScalarSize]
 }
 
 // Public returns the PublicKey corresponding to priv.
-func (priv PrivateKey) Public() PublicKey {
-	return PublicKey(ed25519.PrivateKey(priv).Public().(ed25519.PublicKey))
+func (privateKey PrivateKey) Public() PublicKey {
+	return PublicKey(ed25519.PrivateKey(privateKey).Public().(ed25519.PublicKey))
 }
 
 // Seed returns the private key seed corresponding to priv. It is provided for interoperability
 // with RFC 8032. RFC 8032's private keys correspond to seeds in this package.
-func (priv PrivateKey) Seed() []byte {
-	return ed25519.PrivateKey(priv).Seed()
+func (privateKey PrivateKey) Seed() []byte {
+	return ed25519.PrivateKey(privateKey).Seed()
 }
 
-func (priv PrivateKey) Decrypt(ciphertext []byte, publicKey PublicKey, nonce []byte) (plaintext []byte, err error) {
-	curve25519PublicKey := publicKey.ToCurve25519PublicKey()
-	curve25519PrivateKey := priv.ToCurve25519PrivateKey()
+// Decrypt convert the privateKey to a `curve25519` prviate key using `ToCurve25519PrivateKey`,
+// the fromPublicKey to a `curve25519` public keys using `ToCurve25519PublicKey`,
+// then perform a x25519 key exchange, and finally decrypt the ciphertext using `XChaCha20-Poly1305` with
+// the shared secret as key and nonce as nonce.
+func (privateKey PrivateKey) Decrypt(ciphertext []byte, fromPublicKey PublicKey, nonce []byte) (plaintext []byte, err error) {
+	curve25519FromPublicKey := fromPublicKey.ToCurve25519PublicKey()
+	curve25519PrivateKey := privateKey.ToCurve25519PrivateKey()
 	defer Zeroize(curve25519PrivateKey)
 
-	sharedSecret, err := curve25519.X25519(curve25519PrivateKey, curve25519PublicKey)
+	sharedSecret, err := curve25519.X25519(curve25519PrivateKey, curve25519FromPublicKey)
+	defer Zeroize(sharedSecret)
 	if err != nil {
 		return
 	}
@@ -178,13 +187,15 @@ func (priv PrivateKey) Decrypt(ciphertext []byte, publicKey PublicKey, nonce []b
 	return
 }
 
-func (priv PrivateKey) DecryptAnonymous(ciphertext []byte, publicKey PublicKey) (plaintext []byte, err error) {
+// DecryptAnonymous generates a noce with `blake2b(size=AEADNonceSize, message=ephemeralPublicKey || privateKey.PublicKey())`
+// and decrypt the `ciphertext` using `Decrypt`
+func (privateKey PrivateKey) DecryptAnonymous(ciphertext []byte, ephemeralPublicKey PublicKey) (plaintext []byte, err error) {
 	var nonceMessage []byte
-	myPublicKey := priv.Public()
+	myPublicKey := privateKey.Public()
 
 	// generate nonce
+	nonceMessage = append(nonceMessage, []byte(ephemeralPublicKey)...)
 	nonceMessage = append(nonceMessage, []byte(myPublicKey)...)
-	nonceMessage = append(nonceMessage, []byte(publicKey)...)
 	hash, err := NewHash(AEADNonceSize, nil)
 	if err != nil {
 		return
@@ -192,7 +203,7 @@ func (priv PrivateKey) DecryptAnonymous(ciphertext []byte, publicKey PublicKey) 
 	hash.Write(nonceMessage)
 	nonce := hash.Sum(nil)
 
-	return priv.Decrypt(ciphertext, publicKey, nonce)
+	return privateKey.Decrypt(ciphertext, ephemeralPublicKey, nonce)
 }
 
 // GenerateKeyPair generates a public/private key pair using entropy from rand.
