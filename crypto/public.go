@@ -81,7 +81,7 @@ func (publicKey PublicKey) ToCurve25519PublicKey() []byte {
 // the privateKey to a `curve25519` prviate key using `ToCurve25519PrivateKey`,
 // then perform a x25519 key exchange, and finally encrypt the message using `XChaCha20-Poly1305` with
 // the shared secret as key and nonce as nonce.
-func (publicKey PublicKey) Encrypt(message []byte, fromPrivateKey PrivateKey, nonce []byte) (ciphertext []byte, err error) {
+func (publicKey PublicKey) Encrypt(fromPrivateKey PrivateKey, nonce []byte, message []byte) (ciphertext []byte, err error) {
 	curve25519PublicKey := publicKey.ToCurve25519PublicKey()
 	curve25519FromPrivateKey := fromPrivateKey.ToCurve25519PrivateKey()
 	defer Zeroize(curve25519FromPrivateKey)
@@ -121,7 +121,7 @@ func (publicKey PublicKey) EncryptAnonymous(message []byte) (ciphertext []byte, 
 	hash.Write(nonceMessage)
 	nonce := hash.Sum(nil)
 
-	ciphertext, err = publicKey.Encrypt(message, ephemeralPrivateKey, nonce)
+	ciphertext, err = publicKey.Encrypt(ephemeralPrivateKey, nonce, message)
 	return
 }
 
@@ -167,7 +167,7 @@ func (privateKey PrivateKey) Seed() []byte {
 // the fromPublicKey to a `curve25519` public keys using `ToCurve25519PublicKey`,
 // then perform a x25519 key exchange, and finally decrypt the ciphertext using `XChaCha20-Poly1305` with
 // the shared secret as key and nonce as nonce.
-func (privateKey PrivateKey) Decrypt(ciphertext []byte, fromPublicKey PublicKey, nonce []byte) (plaintext []byte, err error) {
+func (privateKey PrivateKey) Decrypt(fromPublicKey PublicKey, nonce []byte, ciphertext []byte) (plaintext []byte, err error) {
 	curve25519FromPublicKey := fromPublicKey.ToCurve25519PublicKey()
 	curve25519PrivateKey := privateKey.ToCurve25519PrivateKey()
 	defer Zeroize(curve25519PrivateKey)
@@ -189,7 +189,7 @@ func (privateKey PrivateKey) Decrypt(ciphertext []byte, fromPublicKey PublicKey,
 
 // DecryptAnonymous generates a noce with `blake2b(size=AEADNonceSize, message=ephemeralPublicKey || privateKey.PublicKey())`
 // and decrypt the `ciphertext` using `Decrypt`
-func (privateKey PrivateKey) DecryptAnonymous(ciphertext []byte, ephemeralPublicKey PublicKey) (plaintext []byte, err error) {
+func (privateKey PrivateKey) DecryptAnonymous(ephemeralPublicKey PublicKey, ciphertext []byte) (plaintext []byte, err error) {
 	var nonceMessage []byte
 	myPublicKey := privateKey.Public()
 
@@ -203,7 +203,7 @@ func (privateKey PrivateKey) DecryptAnonymous(ciphertext []byte, ephemeralPublic
 	hash.Write(nonceMessage)
 	nonce := hash.Sum(nil)
 
-	return privateKey.Decrypt(ciphertext, ephemeralPublicKey, nonce)
+	return privateKey.Decrypt(ephemeralPublicKey, nonce, ciphertext)
 }
 
 // GenerateKeyPair generates a public/private key pair using entropy from rand.

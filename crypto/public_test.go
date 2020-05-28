@@ -39,12 +39,12 @@ func TestPrivateKeyEncryptDecrypt(t *testing.T) {
 		t.Error(err)
 	}
 
-	ciphertext, err := toPublicKey.Encrypt(message, fromPrivateKey, nonce)
+	ciphertext, err := toPublicKey.Encrypt(fromPrivateKey, nonce, message)
 	if err != nil {
 		t.Error(err)
 	}
 
-	plaintext, err := toPrivateKey.Decrypt(ciphertext, fromPublicKey, nonce)
+	plaintext, err := toPrivateKey.Decrypt(fromPublicKey, nonce, ciphertext)
 	if err != nil {
 		t.Error(err)
 	}
@@ -67,7 +67,7 @@ func TestPrivateKeyEncryptDecryptAnonymous(t *testing.T) {
 		t.Error(err)
 	}
 
-	plaintext, err := toPrivateKey.DecryptAnonymous(ciphertext, ephemeralPublicKey)
+	plaintext, err := toPrivateKey.DecryptAnonymous(ephemeralPublicKey, ciphertext)
 	if err != nil {
 		t.Error(err)
 	}
