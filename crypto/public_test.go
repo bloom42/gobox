@@ -49,7 +49,7 @@ func TestPrivateKeyEncryptDecrypt(t *testing.T) {
 		t.Error(err)
 	}
 
-	if string(message) != string(plaintext) {
+	if !ConstantTimeCompare(message, plaintext) {
 		t.Errorf("Message (%s) and plaintext (%s) don't match", string(message), string(plaintext))
 	}
 }
@@ -72,7 +72,7 @@ func TestPrivateKeyEncryptDecryptAnonymous(t *testing.T) {
 		t.Error(err)
 	}
 
-	if string(message) != string(plaintext) {
+	if !ConstantTimeCompare(message, plaintext) {
 		t.Errorf("Message (%s) and plaintext (%s) don't match", string(message), string(plaintext))
 	}
 }
