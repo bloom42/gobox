@@ -101,9 +101,9 @@ func (publicKey PublicKey) Encrypt(fromPrivateKey PrivateKey, nonce []byte, mess
 	return
 }
 
-// EncryptAnonymous generates an ephemeral keyPair and `Encrypt` message using the public key,
+// EncryptEphemeral generates an ephemeral keyPair and `Encrypt` message using the public key,
 // the ephemeral privateKey and `blake2b(size=AEADNonceSize, message=ephemeralPublicKey || publicKey)` as nonce
-func (publicKey PublicKey) EncryptAnonymous(message []byte) (ciphertext []byte, ephemeralPublicKey PublicKey, err error) {
+func (publicKey PublicKey) EncryptEphemeral(message []byte) (ciphertext []byte, ephemeralPublicKey PublicKey, err error) {
 	ephemeralPublicKey, ephemeralPrivateKey, err := GenerateKeyPair(RandReader())
 	defer Zeroize(ephemeralPrivateKey)
 	if err != nil {
@@ -187,9 +187,9 @@ func (privateKey PrivateKey) Decrypt(fromPublicKey PublicKey, nonce []byte, ciph
 	return
 }
 
-// DecryptAnonymous generates a noce with `blake2b(size=AEADNonceSize, message=ephemeralPublicKey || privateKey.PublicKey())`
+// DecryptEphemeral generates a noce with `blake2b(size=AEADNonceSize, message=ephemeralPublicKey || privateKey.PublicKey())`
 // and decrypt the `ciphertext` using `Decrypt`
-func (privateKey PrivateKey) DecryptAnonymous(ephemeralPublicKey PublicKey, ciphertext []byte) (plaintext []byte, err error) {
+func (privateKey PrivateKey) DecryptEphemeral(ephemeralPublicKey PublicKey, ciphertext []byte) (plaintext []byte, err error) {
 	var nonceMessage []byte
 	myPublicKey := privateKey.Public()
 

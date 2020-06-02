@@ -54,7 +54,7 @@ func TestPrivateKeyEncryptDecrypt(t *testing.T) {
 	}
 }
 
-func TestPrivateKeyEncryptDecryptAnonymous(t *testing.T) {
+func TestPrivateKeyEncryptDecryptEphemeral(t *testing.T) {
 	message := []byte("this is a simple message")
 
 	toPublicKey, toPrivateKey, err := GenerateKeyPair(RandReader())
@@ -62,12 +62,12 @@ func TestPrivateKeyEncryptDecryptAnonymous(t *testing.T) {
 		t.Error(err)
 	}
 
-	ciphertext, ephemeralPublicKey, err := toPublicKey.EncryptAnonymous(message)
+	ciphertext, ephemeralPublicKey, err := toPublicKey.EncryptEphemeral(message)
 	if err != nil {
 		t.Error(err)
 	}
 
-	plaintext, err := toPrivateKey.DecryptAnonymous(ephemeralPublicKey, ciphertext)
+	plaintext, err := toPrivateKey.DecryptEphemeral(ephemeralPublicKey, ciphertext)
 	if err != nil {
 		t.Error(err)
 	}
