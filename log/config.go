@@ -9,6 +9,29 @@ import (
 // LoggerOption is used to configure a logger.
 type LoggerOption func(logger *Logger)
 
+var (
+	// DurationFieldUnit defines the unit for time.Duration type fields added
+	// using the Duration method.
+	DurationFieldUnit = time.Millisecond
+
+	// DurationFieldInteger renders Dur fields as integer instead of float if
+	// set to true.
+	DurationFieldInteger = false
+
+	// ErrorHandler is called whenever log fails to write an event on its
+	// output. If not set, an error is printed on the stderr. This handler must
+	// be thread safe and non-blocking.
+	ErrorHandler func(err error)
+
+	// ErrorStackMarshaler extract the stack from err if any.
+	ErrorStackMarshaler func(err error) interface{}
+
+	// ErrorMarshalFunc allows customization of global error marshaling
+	ErrorMarshalFunc = func(err error) interface{} {
+		return err
+	}
+)
+
 // Writer update logger's writer.
 func Writer(writer io.Writer) LoggerOption {
 	return func(logger *Logger) {
@@ -144,26 +167,3 @@ func TimestampFunc(timestampFunc func() time.Time) LoggerOption {
 		logger.timestampFunc = timestampFunc
 	}
 }
-
-var (
-	// DurationFieldUnit defines the unit for time.Duration type fields added
-	// using the Duration method.
-	DurationFieldUnit = time.Millisecond
-
-	// DurationFieldInteger renders Dur fields as integer instead of float if
-	// set to true.
-	DurationFieldInteger = false
-
-	// ErrorHandler is called whenever log fails to write an event on its
-	// output. If not set, an error is printed on the stderr. This handler must
-	// be thread safe and non-blocking.
-	ErrorHandler func(err error)
-
-	// ErrorStackMarshaler extract the stack from err if any.
-	ErrorStackMarshaler func(err error) interface{}
-
-	// ErrorMarshalFunc allows customization of global error marshaling
-	ErrorMarshalFunc = func(err error) interface{} {
-		return err
-	}
-)
