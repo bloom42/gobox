@@ -19,4 +19,4 @@ See `LICENSE.txt` and https://bloom.sh/licensing
 `keyring` is a fork of [github.com/zalando/go-keyring](https://github.com/zalando/go-keyring) <br>
 `is` is a fork of [github.com/matryer/is](https://github.com/matryer/is) <br>
 `graphql` is a fork of [github.com/machinebox/graphql](https://github.com/machinebox/graphql) <br>
-`email` is a fork of [don't remember]
+`email` is a fork of [github.com/jordan-wright/email](https://github.com/jordan-wright/email)
