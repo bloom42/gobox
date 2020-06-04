@@ -175,9 +175,9 @@ func Timestamp(enable bool) Field {
 	}
 }
 
-// Error adds the field key with serialized err to the *Event context.
+// ErrorField adds the field key with serialized err to the *Event context.
 // If err is nil, no field is added.
-func Error(key string, value error) Field {
+func ErrorField(key string, value error) Field {
 	return func(e *Event) {
 		e.error(key, value)
 	}
