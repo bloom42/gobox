@@ -15,7 +15,7 @@ func (e *Event) appendFields(dst []byte, fields map[string]interface{}) []byte {
 	for _, key := range keys {
 		dst = enc.AppendKey(dst, key)
 		val := fields[key]
-		if val, ok := val.(LogObjectMarshaler); ok {
+		if val, ok := val.(ObjectMarshaler); ok {
 			e := newEvent(nil, 0)
 			e.buf = e.buf[:0]
 			e.appendObject(val)
@@ -31,7 +31,7 @@ func (e *Event) appendFields(dst []byte, fields map[string]interface{}) []byte {
 		case error:
 			marshaled := ErrorMarshalFunc(val)
 			switch m := marshaled.(type) {
-			case LogObjectMarshaler:
+			case ObjectMarshaler:
 				e := newEvent(nil, 0)
 				e.buf = e.buf[:0]
 				e.appendObject(m)
@@ -49,7 +49,7 @@ func (e *Event) appendFields(dst []byte, fields map[string]interface{}) []byte {
 			for i, err := range val {
 				marshaled := ErrorMarshalFunc(err)
 				switch m := marshaled.(type) {
-				case LogObjectMarshaler:
+				case ObjectMarshaler:
 					e := newEvent(nil, 0)
 					e.buf = e.buf[:0]
 					e.appendObject(m)

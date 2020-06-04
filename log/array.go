@@ -58,9 +58,9 @@ func (a *array) write(dst []byte) []byte {
 	return dst
 }
 
-// Object marshals an object that implement the LogObjectMarshaler
+// Object marshals an object that implement the ObjectMarshaler
 // interface and append append it to the array.
-func (a *array) Object(obj LogObjectMarshaler) *array {
+func (a *array) Object(obj ObjectMarshaler) *array {
 	e := newDict()
 	e.timeFieldFormat = a.timeFieldFormat
 	obj.MarshalLogObject(e)
@@ -92,7 +92,7 @@ func (a *array) Hex(val []byte) *array {
 func (a *array) Err(err error) *array {
 	marshaled := ErrorMarshalFunc(err)
 	switch m := marshaled.(type) {
-	case LogObjectMarshaler:
+	case ObjectMarshaler:
 		e := newEvent(nil, 0)
 		e.buf = e.buf[:0]
 		e.appendObject(m)
@@ -201,7 +201,7 @@ func (a *array) Dur(d time.Duration) *array {
 
 // Interface append append i marshaled using reflection.
 func (a *array) Interface(i interface{}) *array {
-	if obj, ok := i.(LogObjectMarshaler); ok {
+	if obj, ok := i.(ObjectMarshaler); ok {
 		return a.Object(obj)
 	}
 	a.buf = enc.AppendInterface(enc.AppendArrayDelim(a.buf), i)

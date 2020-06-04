@@ -1,8 +1,5 @@
 package log
 
-// global logger
-
-// logger is the global globalLogger.
 var globalLogger = New(CallerSkipFrameCount(4))
 
 // SetGlobalLogger update the global logger

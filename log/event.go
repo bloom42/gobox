@@ -54,15 +54,15 @@ func putEvent(e *Event) {
 	eventPool.Put(e)
 }
 
-// LogObjectMarshaler provides a strongly-typed and encoding-agnostic interface
+// ObjectMarshaler provides a strongly-typed and encoding-agnostic interface
 // to be implemented by types used with Event/Context's Object methods.
-type LogObjectMarshaler interface {
+type ObjectMarshaler interface {
 	MarshalLogObject(*Event)
 }
 
-// LogArrayMarshaler provides a strongly-typed and encoding-agnostic interface
+// ArrayMarshaler provides a strongly-typed and encoding-agnostic interface
 // to be implemented by types used with Event/Context's Array methods.
-type LogArrayMarshaler interface {
+type ArrayMarshaler interface {
 	MarshalLogArray(*array)
 }
 
@@ -129,8 +129,8 @@ func newDict() *Event {
 
 // Array adds the field key with an array to the event context.
 // Use Event.Arr() to create the array or pass a type that
-// implement the LogArrayMarshaler interface.
-func (e *Event) array(key string, arr LogArrayMarshaler) {
+// implement the ArrayMarshaler interface.
+func (e *Event) array(key string, arr ArrayMarshaler) {
 	e.buf = enc.AppendKey(e.buf, key)
 	var a *array
 	if aa, ok := arr.(*array); ok {
@@ -142,20 +142,20 @@ func (e *Event) array(key string, arr LogArrayMarshaler) {
 	e.buf = a.write(e.buf)
 }
 
-func (e *Event) appendObject(obj LogObjectMarshaler) {
+func (e *Event) appendObject(obj ObjectMarshaler) {
 	e.buf = enc.AppendBeginMarker(e.buf)
 	obj.MarshalLogObject(e)
 	e.buf = enc.AppendEndMarker(e.buf)
 }
 
-// Object marshals an object that implement the LogObjectMarshaler interface.
-func (e *Event) object(key string, obj LogObjectMarshaler) {
+// Object marshals an object that implement the ObjectMarshaler interface.
+func (e *Event) object(key string, obj ObjectMarshaler) {
 	e.buf = enc.AppendKey(e.buf, key)
 	e.appendObject(obj)
 }
 
-// embedObject marshals an object that implement the LogObjectMarshaler interface.
-func (e *Event) embedObject(obj LogObjectMarshaler) {
+// embedObject marshals an object that implement the ObjectMarshaler interface.
+func (e *Event) embedObject(obj ObjectMarshaler) {
 	obj.MarshalLogObject(e)
 }
 
@@ -195,7 +195,7 @@ func (e *Event) rawJSON(key string, b []byte) {
 func (e *Event) error(key string, err error) {
 	switch m := ErrorMarshalFunc(err).(type) {
 	case nil:
-	case LogObjectMarshaler:
+	case ObjectMarshaler:
 		e.object(key, m)
 	case error:
 		e.string(key, m.Error())
@@ -212,7 +212,7 @@ func (e *Event) errors(key string, errs []error) {
 	arr := e.arr()
 	for _, err := range errs {
 		switch m := ErrorMarshalFunc(err).(type) {
-		case LogObjectMarshaler:
+		case ObjectMarshaler:
 			arr = arr.Object(m)
 		case error:
 			arr = arr.Err(m)
@@ -237,7 +237,7 @@ func (e *Event) err(err error) {
 	if e.stack && ErrorStackMarshaler != nil {
 		switch m := ErrorStackMarshaler(err).(type) {
 		case nil:
-		case LogObjectMarshaler:
+		case ObjectMarshaler:
 			e.object(e.errorStackFieldName, m)
 		case error:
 			e.string(e.errorStackFieldName, m.Error())
@@ -424,7 +424,7 @@ func (e *Event) durations(key string, d []time.Duration) {
 
 // Interface adds the field key with i marshaled using reflection.
 func (e *Event) iinterface(key string, i interface{}) {
-	if obj, ok := i.(LogObjectMarshaler); ok {
+	if obj, ok := i.(ObjectMarshaler); ok {
 		e.object(key, obj)
 	}
 	e.buf = enc.AppendInterface(enc.AppendKey(e.buf, key), i)

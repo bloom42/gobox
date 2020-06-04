@@ -93,15 +93,15 @@ func Durations(key string, value []time.Duration) Field {
 	}
 }
 
-// Object marshals an object that implement the LogObjectMarshaler interface.
-func Object(key string, value LogObjectMarshaler) Field {
+// Object marshals an object that implement the ObjectMarshaler interface.
+func Object(key string, value ObjectMarshaler) Field {
 	return func(e *Event) {
 		e.object(key, value)
 	}
 }
 
-// EmbedObject marshals an object that implement the LogObjectMarshaler interface.
-func EmbedObject(obj LogObjectMarshaler) Field {
+// EmbedObject marshals an object that implement the ObjectMarshaler interface.
+func EmbedObject(obj ObjectMarshaler) Field {
 	return func(e *Event) {
 		e.embedObject(obj)
 	}
