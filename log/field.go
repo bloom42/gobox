@@ -1,8 +1,11 @@
 package log
 
 import (
+	"encoding/base64"
 	"net"
 	"time"
+
+	"gitlab.com/bloom42/gobox/uuid"
 )
 
 // Field functions are used to add fields to events
@@ -208,6 +211,20 @@ func Errors(key string, value []error) Field {
 func Hex(key string, value []byte) Field {
 	return func(e *Event) {
 		e.hex(key, value)
+	}
+}
+
+// Base64 adds the field key with val as a base64 string to the *Event context. Allocate.
+func Base64(key string, value []byte) Field {
+	return func(e *Event) {
+		e.string(key, base64.StdEncoding.EncodeToString(value))
+	}
+}
+
+// UUID adds the field key with val as a UUID string to the *Event context. Allocate
+func UUID(key string, value uuid.UUID) Field {
+	return func(e *Event) {
+		e.string(key, value.String())
 	}
 }
 
