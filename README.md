@@ -2,12 +2,11 @@
 
 The missing pieces of Go's standard library
 
-
 [![GoDoc](https://godoc.org/gitlab.com/bloom42/gobox?status.svg)](https://pkg.go.dev/gitlab.com/bloom42/gobox)
 
 ---------------------------------------------
 
-**This is beta software and may break at any time!**
+**This is beta software and may break at any time! Use it at your own risk**
 
 
 ## Licensing
