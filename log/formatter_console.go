@@ -23,7 +23,7 @@ const (
 )
 
 // FormatterConsole prettify output for human cosumption
-func FormatterConsole() LogFormatter {
+func FormatterConsole() Formatter {
 	return func(ev *Event) ([]byte, error) {
 		var event map[string]interface{}
 		var ret = new(bytes.Buffer)

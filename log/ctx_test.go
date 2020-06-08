@@ -7,7 +7,7 @@ import (
 )
 
 func TestFromCtx(t *testing.T) {
-	log := New(Writer(ioutil.Discard))
+	log := New(SetWriter(ioutil.Discard))
 	ctx := log.ToCtx(context.Background())
 	log2 := FromCtx(ctx)
 	if &log != log2 {
@@ -15,7 +15,7 @@ func TestFromCtx(t *testing.T) {
 	}
 
 	// update
-	log = log.With(Level(InfoLevel))
+	log = log.With(SetLevel(InfoLevel))
 	ctx = log.ToCtx(ctx)
 	log2 = FromCtx(ctx)
 	if &log != log2 {
@@ -29,22 +29,22 @@ func TestFromCtx(t *testing.T) {
 }
 
 func TestFromCtxDisabled(t *testing.T) {
-	dl := New(Writer(ioutil.Discard), Level(Disabled))
+	dl := New(SetWriter(ioutil.Discard), SetLevel(Disabled))
 	ctx := dl.ToCtx(context.Background())
 	if ctx != context.Background() {
 		t.Error("ToCtx stored a disabled logger")
 	}
 
 	l := New(
-		Writer(ioutil.Discard),
-		Fields(String("foo", "bar")),
+		SetWriter(ioutil.Discard),
+		SetFields(String("foo", "bar")),
 	)
 	ctx = l.ToCtx(ctx)
 	if FromCtx(ctx) != &l {
 		t.Error("WithContext did not store logger")
 	}
 
-	l = l.With(Level(DebugLevel))
+	l = l.With(SetLevel(DebugLevel))
 	ctx = l.ToCtx(ctx)
 	if FromCtx(ctx) != &l {
 		t.Error("ToCtx did not store copied logger")

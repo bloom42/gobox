@@ -10,7 +10,7 @@ import (
 )
 
 // FormatterCLI prettify output suitable for command-line interfaces.
-func FormatterCLI() LogFormatter {
+func FormatterCLI() Formatter {
 	return func(ev *Event) ([]byte, error) {
 		var event map[string]interface{}
 		var ret = new(bytes.Buffer)

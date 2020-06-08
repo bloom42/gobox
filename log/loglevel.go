@@ -2,12 +2,12 @@ package log
 
 import "fmt"
 
-// LogLevel defines log levels.
-type LogLevel uint8
+// Level defines log levels.
+type Level uint8
 
 const (
 	// DebugLevel defines debug log level.
-	DebugLevel LogLevel = iota
+	DebugLevel Level = iota
 	// InfoLevel defines info log level.
 	InfoLevel
 	// WarnLevel defines warn log level.
@@ -24,7 +24,7 @@ const (
 	Disabled
 )
 
-func (l LogLevel) String() string {
+func (l Level) String() string {
 	switch l {
 	case DebugLevel:
 		return "debug"
@@ -46,7 +46,7 @@ func (l LogLevel) String() string {
 
 // ParseLevel converts a level string into a log Level value.
 // returns an error if the input string does not match known values.
-func ParseLevel(levelStr string) (LogLevel, error) {
+func ParseLevel(levelStr string) (Level, error) {
 	switch levelStr {
 	case DebugLevel.String():
 		return DebugLevel, nil

@@ -178,24 +178,16 @@ func Timestamp(enable bool) Field {
 	}
 }
 
-// ErrorField adds the field key with serialized err to the *Event context.
-// If err is nil, no field is added.
-func ErrorField(key string, value error) Field {
-	return func(e *Event) {
-		e.error(key, value)
-	}
-}
-
-// Err adds the field "error" with serialized err to the *Event context.
+// Err adds the field `key` with serialized err to the *Event context.
 // If err is nil, no field is added.
 // To customize the key name, uze log.ErrorFieldName.
 //
 // If Stack() has been called before and log.ErrorStackMarshaler is defined,
 // the err is passed to ErrorStackMarshaler and the result is appended to the
 // log.ErrorStackFieldName.
-func Err(value error) Field {
+func Err(key string, value error) Field {
 	return func(e *Event) {
-		e.err(value)
+		e.err(key, value)
 	}
 }
 

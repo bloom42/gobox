@@ -32,8 +32,8 @@ var (
 	}
 )
 
-// Writer update logger's writer.
-func Writer(writer io.Writer) LoggerOption {
+// SetWriter update logger's writer.
+func SetWriter(writer io.Writer) LoggerOption {
 	return func(logger *Logger) {
 		if writer == nil {
 			writer = os.Stdout
@@ -46,36 +46,36 @@ func Writer(writer io.Writer) LoggerOption {
 	}
 }
 
-// Level update logger's level.
-func Level(lvl LogLevel) LoggerOption {
+// SetLevel update logger's level.
+func SetLevel(lvl Level) LoggerOption {
 	return func(logger *Logger) {
 		logger.level = lvl
 	}
 }
 
-// Sampler update logger's sampler.
-func Sampler(sampler LogSampler) LoggerOption {
+// SetSampler update logger's sampler.
+func SetSampler(sampler Sampler) LoggerOption {
 	return func(logger *Logger) {
 		logger.sampler = sampler
 	}
 }
 
 // AddHook appends hook to logger's hook
-func AddHook(hook LogHook) LoggerOption {
+func AddHook(hook Hook) LoggerOption {
 	return func(logger *Logger) {
 		logger.hooks = append(logger.hooks, hook)
 	}
 }
 
-// Hooks replaces logger's hooks
-func Hooks(hooks ...LogHook) LoggerOption {
+// SetHooks replaces logger's hooks
+func SetHooks(hooks ...Hook) LoggerOption {
 	return func(logger *Logger) {
 		logger.hooks = hooks
 	}
 }
 
-// Fields update logger's context fields
-func Fields(fields ...Field) LoggerOption {
+// SetFields update logger's context fields
+func SetFields(fields ...Field) LoggerOption {
 	return func(logger *Logger) {
 		e := newEvent(logger.writer, logger.level)
 		e.buf = nil
@@ -98,71 +98,64 @@ func Fields(fields ...Field) LoggerOption {
 	}
 }
 
-// Formatter update logger's formatter.
-func Formatter(formatter LogFormatter) LoggerOption {
+// SetFormatter update logger's formatter.
+func SetFormatter(formatter Formatter) LoggerOption {
 	return func(logger *Logger) {
 		logger.formatter = formatter
 	}
 }
 
-// TimestampFieldName update logger's timestampFieldName.
-func TimestampFieldName(timestampFieldName string) LoggerOption {
+// SetTimestampFieldName update logger's timestampFieldName.
+func SetTimestampFieldName(timestampFieldName string) LoggerOption {
 	return func(logger *Logger) {
 		logger.timestampFieldName = timestampFieldName
 	}
 }
 
-// LevelFieldName update logger's levelFieldName.
-func LevelFieldName(levelFieldName string) LoggerOption {
+// SetLevelFieldName update logger's levelFieldName.
+func SetLevelFieldName(levelFieldName string) LoggerOption {
 	return func(logger *Logger) {
 		logger.levelFieldName = levelFieldName
 	}
 }
 
-// MessageFieldName update logger's messageFieldName.
-func MessageFieldName(messageFieldName string) LoggerOption {
+// SetMessageFieldName update logger's messageFieldName.
+func SetMessageFieldName(messageFieldName string) LoggerOption {
 	return func(logger *Logger) {
 		logger.messageFieldName = messageFieldName
 	}
 }
 
-// ErrorFieldName update logger's errorFieldName.
-func ErrorFieldName(errorFieldName string) LoggerOption {
-	return func(logger *Logger) {
-		logger.errorFieldName = errorFieldName
-	}
-}
-
-// CallerFieldName update logger's callerFieldName.
-func CallerFieldName(callerFieldName string) LoggerOption {
+// SetCallerFieldName update logger's callerFieldName.
+func SetCallerFieldName(callerFieldName string) LoggerOption {
 	return func(logger *Logger) {
 		logger.callerFieldName = callerFieldName
 	}
 }
 
-// CallerSkipFrameCount update logger's callerSkipFrameCount.
-func CallerSkipFrameCount(callerSkipFrameCount int) LoggerOption {
+// SetCallerSkipFrameCount update logger's callerSkipFrameCount.
+func SetCallerSkipFrameCount(callerSkipFrameCount int) LoggerOption {
 	return func(logger *Logger) {
 		logger.callerSkipFrameCount = callerSkipFrameCount
 	}
 }
 
-// ErrorStackFieldName update logger's errorStackFieldName.
-func ErrorStackFieldName(errorStackFieldName string) LoggerOption {
+// SetErrorStackFieldName update logger's errorStackFieldName.
+func SetErrorStackFieldName(errorStackFieldName string) LoggerOption {
 	return func(logger *Logger) {
 		logger.errorStackFieldName = errorStackFieldName
 	}
 }
 
-// TimeFieldFormat update logger's timeFieldFormat.
-func TimeFieldFormat(timeFieldFormat string) LoggerOption {
+// SetTimeFieldFormat update logger's timeFieldFormat.
+func SetTimeFieldFormat(timeFieldFormat string) LoggerOption {
 	return func(logger *Logger) {
 		logger.timeFieldFormat = timeFieldFormat
 	}
 }
 
-// TimestampFunc update logger's timestampFunc.
-func TimestampFunc(timestampFunc func() time.Time) LoggerOption {
+// SetTimestampFunc update logger's timestampFunc.
+func SetTimestampFunc(timestampFunc func() time.Time) LoggerOption {
 	return func(logger *Logger) {
 		logger.timestampFunc = timestampFunc
 	}

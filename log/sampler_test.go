@@ -7,42 +7,42 @@ import (
 
 var samplers = []struct {
 	name    string
-	sampler func() LogSampler
+	sampler func() Sampler
 	total   int
 	wantMin int
 	wantMax int
 }{
 	{
 		"SamplerBasic_1",
-		func() LogSampler {
+		func() Sampler {
 			return &SamplerBasic{N: 1}
 		},
 		100, 100, 100,
 	},
 	{
 		"SamplerBasic_5",
-		func() LogSampler {
+		func() Sampler {
 			return &SamplerBasic{N: 5}
 		},
 		100, 20, 20,
 	},
 	{
 		"SamplerRandom",
-		func() LogSampler {
+		func() Sampler {
 			return SamplerRandom(5)
 		},
 		100, 10, 30,
 	},
 	{
 		"SamplerBurst",
-		func() LogSampler {
+		func() Sampler {
 			return &SamplerBurst{Burst: 20, Period: time.Second}
 		},
 		100, 20, 20,
 	},
 	{
 		"SamplerBurstNext",
-		func() LogSampler {
+		func() Sampler {
 			return &SamplerBurst{Burst: 20, Period: time.Second, NextSampler: &SamplerBasic{N: 5}}
 		},
 		120, 40, 40,

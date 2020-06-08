@@ -1,25 +1,25 @@
 package log
 
-var globalLogger = New(CallerSkipFrameCount(4))
+var globalLogger = New(SetCallerSkipFrameCount(4))
 
 // SetGlobalLogger update the global logger
 func SetGlobalLogger(logger Logger) {
-	globalLogger = logger.With(CallerSkipFrameCount(4))
+	globalLogger = logger.With(SetCallerSkipFrameCount(4))
 }
 
 // GlobalLogger returns the global logger
 func GlobalLogger() Logger {
-	return globalLogger.With(CallerSkipFrameCount(3))
+	return globalLogger.With(SetCallerSkipFrameCount(3))
 }
 
 // With duplicates the global logger and update it's configuration.
 func With(options ...LoggerOption) Logger {
-	options = append([]LoggerOption{CallerSkipFrameCount(3)}, options...)
+	options = append([]LoggerOption{SetCallerSkipFrameCount(3)}, options...)
 	return globalLogger.With(options...)
 }
 
 // LogWithLevel logs a new message with the given level.
-func LogWithLevel(level LogLevel, message string, fields ...Field) {
+func LogWithLevel(level Level, message string, fields ...Field) {
 	globalLogger.LogWithLevel(level, message, fields...)
 }
 

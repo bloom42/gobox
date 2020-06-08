@@ -14,9 +14,9 @@ import (
 // global Logger from an init()
 func setup() {
 	// In order to always output a static time to stdout for these
-	// examples to pass, we need to override log.TimestampFunc
+	// examples to pass, we need to override log.SetTimestampFunc
 	// and log.Logger globals -- you would not normally need to do this
-	log.SetGlobalLogger(log.New(log.TimeFieldFormat(""), log.TimestampFunc(func() time.Time {
+	log.SetGlobalLogger(log.New(log.SetTimeFieldFormat(""), log.SetTimestampFunc(func() time.Time {
 		return time.Date(2008, 1, 8, 17, 5, 05, 0, time.UTC)
 	})))
 }
@@ -67,7 +67,7 @@ func ExampleFatal() {
 	err := errors.New("A repo man spends his life getting into tense situations")
 	service := "myservice"
 
-	log.Fatal(fmt.Sprintf("Cannot start %s", service), log.Err(err), log.String("service", service))
+	log.Fatal(fmt.Sprintf("Cannot start %s", service), log.Err("error", err), log.String("service", service))
 
 	// Outputs: {"level":"fatal","timestamp":1199811905,"error":"A repo man spends his life getting into tense situations","service":"myservice","message":"Cannot start myservice"}
 }
@@ -89,7 +89,7 @@ func Example() {
 		defer func() {
 			log.SetGlobalLogger(logger)
 		}()
-		log.SetGlobalLogger(log.With(log.Level(log.DebugLevel)))
+		log.SetGlobalLogger(log.With(log.SetLevel(log.DebugLevel)))
 	}
 
 	log.Info("This message appears when log level set to Debug or Info")

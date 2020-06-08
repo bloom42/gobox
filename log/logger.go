@@ -21,19 +21,18 @@ type Logger struct {
 	stack                bool
 	caller               bool
 	timestamp            bool
-	level                LogLevel
-	sampler              LogSampler
+	level                Level
+	sampler              Sampler
 	context              []byte
-	hooks                []LogHook
+	hooks                []Hook
 	timestampFieldName   string
 	levelFieldName       string
 	messageFieldName     string
-	errorFieldName       string
 	callerFieldName      string
 	callerSkipFrameCount int
 	errorStackFieldName  string
 	timeFieldFormat      string
-	formatter            LogFormatter
+	formatter            Formatter
 	timestampFunc        func() time.Time
 	contextMutex         *sync.Mutex
 	encoder              Encoder
@@ -54,7 +53,6 @@ func New(options ...LoggerOption) Logger {
 		timestampFieldName:   DefaultTimestampFieldName,
 		levelFieldName:       DefaultLevelFieldName,
 		messageFieldName:     DefaultMessageFieldName,
-		errorFieldName:       DefaultErrorFieldName,
 		callerFieldName:      DefaultCallerFieldName,
 		callerSkipFrameCount: DefaultCallerSkipFrameCount,
 		errorStackFieldName:  DefaultErrorStackFieldName,
@@ -68,7 +66,7 @@ func New(options ...LoggerOption) Logger {
 
 // Nop returns a disabled logger for which all operation are no-op.
 func Nop() Logger {
-	return New(Writer(nil), Level(Disabled))
+	return New(SetWriter(nil), SetLevel(Disabled))
 }
 
 // With create a new copy of the logger and apply all the options to the new logger
@@ -86,12 +84,12 @@ func (l Logger) With(options ...LoggerOption) Logger {
 }
 
 // GetLevel returns the current log level.
-func (l *Logger) GetLevel() LogLevel {
+func (l *Logger) GetLevel() Level {
 	return l.level
 }
 
 // LogWithLevel logs a new message with the given level.
-func (l *Logger) LogWithLevel(level LogLevel, message string, fields ...Field) {
+func (l *Logger) LogWithLevel(level Level, message string, fields ...Field) {
 	l.logEvent(level, message, nil, fields)
 }
 
@@ -160,7 +158,7 @@ func (l Logger) Write(p []byte) (n int, err error) {
 	return
 }
 
-func (l *Logger) logEvent(level LogLevel, message string, done func(string), fields []Field) {
+func (l *Logger) logEvent(level Level, message string, done func(string), fields []Field) {
 	enabled := l.should(level)
 	if !enabled {
 		return
@@ -239,7 +237,7 @@ func writeEvent(e *Event, msg string, done func(string)) {
 }
 
 // should returns true if the log event should be logged.
-func (l *Logger) should(lvl LogLevel) bool {
+func (l *Logger) should(lvl Level) bool {
 	if lvl < l.level {
 		return false
 	}
@@ -282,7 +280,6 @@ func copyInternalLoggerFieldsToEvent(l *Logger, e *Event) {
 	e.timestampFieldName = l.timestampFieldName
 	e.levelFieldName = l.levelFieldName
 	e.messageFieldName = l.messageFieldName
-	e.errorFieldName = l.errorFieldName
 	e.callerFieldName = l.callerFieldName
 	e.timeFieldFormat = l.timeFieldFormat
 	e.errorStackFieldName = l.errorStackFieldName

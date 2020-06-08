@@ -12,9 +12,6 @@ const (
 	// DefaultMessageFieldName is the default field name used for the message field.
 	DefaultMessageFieldName = "message"
 
-	// DefaultErrorFieldName is the default field name used for error fields.
-	DefaultErrorFieldName = "error"
-
 	// DefaultCallerFieldName is the default field name used for caller field.
 	DefaultCallerFieldName = "caller"
 

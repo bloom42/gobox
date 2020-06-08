@@ -21,21 +21,20 @@ var eventPool = &sync.Pool{
 type Event struct {
 	buf                  []byte
 	w                    LevelWriter
-	level                LogLevel
+	level                Level
 	done                 func(msg string)
-	stack                bool      // enable error stack trace
-	caller               bool      // enable caller field
-	timestamp            bool      // enable timestamp
-	ch                   []LogHook // hooks from context
+	stack                bool   // enable error stack trace
+	caller               bool   // enable caller field
+	timestamp            bool   // enable timestamp
+	ch                   []Hook // hooks from context
 	timestampFieldName   string
 	levelFieldName       string
 	messageFieldName     string
-	errorFieldName       string
 	callerFieldName      string
 	errorStackFieldName  string
 	timeFieldFormat      string
 	callerSkipFrameCount int
-	formatter            LogFormatter
+	formatter            Formatter
 	timestampFunc        func() time.Time
 	encoder              Encoder
 }
@@ -66,7 +65,7 @@ type ArrayMarshaler interface {
 	MarshalLogArray(*array)
 }
 
-func newEvent(w LevelWriter, level LogLevel) *Event {
+func newEvent(w LevelWriter, level Level) *Event {
 	e := eventPool.Get().(*Event)
 	e.buf = e.buf[:0]
 	e.ch = nil
@@ -190,7 +189,7 @@ func (e *Event) rawJSON(key string, b []byte) {
 	e.buf = appendJSON(enc.AppendKey(e.buf, key), b)
 }
 
-// Error adds the field key with serialized err to the *Event context.
+// error adds the field key with serialized err to the *Event context.
 // If err is nil, no field is added.
 func (e *Event) error(key string, err error) {
 	switch m := ErrorMarshalFunc(err).(type) {
@@ -226,14 +225,13 @@ func (e *Event) errors(key string, errs []error) {
 	e.array(key, arr)
 }
 
-// Err adds the field "error" with serialized err to the *Event context.
+// Err adds the field key with serialized err to the *Event context.
 // If err is nil, no field is added.
-// To customize the key name, uze log.ErrorFieldName.
 ////
 // If Stack() has been called before and log.ErrorStackMarshaler is defined,
 // the err is passed to ErrorStackMarshaler and the result is appended to the
 // log.ErrorStackFieldName.
-func (e *Event) err(err error) {
+func (e *Event) err(key string, err error) {
 	if e.stack && ErrorStackMarshaler != nil {
 		switch m := ErrorStackMarshaler(err).(type) {
 		case nil:
@@ -247,7 +245,7 @@ func (e *Event) err(err error) {
 			e.iinterface(e.errorStackFieldName, m)
 		}
 	}
-	e.error(e.errorFieldName, err)
+	e.error(key, err)
 }
 
 // Stack enables stack trace printing for the error passed to Err().

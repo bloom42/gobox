@@ -15,11 +15,11 @@ const (
 	SampleRarely = SamplerRandom(1000)
 )
 
-// LogSampler defines an interface to a log sampler.
-type LogSampler interface {
+// Sampler defines an interface to a log sampler.
+type Sampler interface {
 	// Sample returns true if the event should be part of the sample, false if
 	// the event should be dropped.
-	Sample(lvl LogLevel) bool
+	Sample(lvl Level) bool
 }
 
 // SamplerRandom use a PRNG to randomly sample an event out of N events,
@@ -27,7 +27,7 @@ type LogSampler interface {
 type SamplerRandom uint32
 
 // Sample implements the Sampler interface.
-func (s SamplerRandom) Sample(lvl LogLevel) bool {
+func (s SamplerRandom) Sample(lvl Level) bool {
 	if s <= 0 {
 		return false
 	}
@@ -45,7 +45,7 @@ type SamplerBasic struct {
 }
 
 // Sample implements the Sampler interface.
-func (s *SamplerBasic) Sample(lvl LogLevel) bool {
+func (s *SamplerBasic) Sample(lvl Level) bool {
 	c := atomic.AddUint32(&s.counter, 1)
 	return c%s.N == s.N-1
 }
@@ -60,14 +60,14 @@ type SamplerBurst struct {
 	Period time.Duration
 	// NextSampler is the sampler used after the burst is reached. If nil,
 	// events are always rejected after the burst.
-	NextSampler LogSampler
+	NextSampler Sampler
 
 	counter uint32
 	resetAt int64
 }
 
 // Sample implements the Sampler interface.
-func (s *SamplerBurst) Sample(lvl LogLevel) bool {
+func (s *SamplerBurst) Sample(lvl Level) bool {
 	if s.Burst > 0 && s.Period > 0 {
 		if s.inc() <= s.Burst {
 			return true
@@ -100,14 +100,14 @@ func (s *SamplerBurst) inc() uint32 {
 
 // SamplerLevel applies a different sampler for each level.
 type SamplerLevel struct {
-	DebugSampler LogSampler
-	InfoSampler  LogSampler
-	WarnSampler  LogSampler
-	ErrorSampler LogSampler
+	DebugSampler Sampler
+	InfoSampler  Sampler
+	WarnSampler  Sampler
+	ErrorSampler Sampler
 }
 
 // Sample implements the Sampler interface.
-func (s SamplerLevel) Sample(lvl LogLevel) bool {
+func (s SamplerLevel) Sample(lvl Level) bool {
 	switch lvl {
 	case DebugLevel:
 		if s.DebugSampler != nil {

@@ -13,7 +13,7 @@ var (
 )
 
 func BenchmarkLogEmpty(b *testing.B) {
-	logger := New(Writer(ioutil.Discard))
+	logger := New(SetWriter(ioutil.Discard))
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -23,7 +23,7 @@ func BenchmarkLogEmpty(b *testing.B) {
 }
 
 func BenchmarkDisabled(b *testing.B) {
-	logger := New(Writer(ioutil.Discard), Level(Disabled))
+	logger := New(SetWriter(ioutil.Discard), SetLevel(Disabled))
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -33,7 +33,7 @@ func BenchmarkDisabled(b *testing.B) {
 }
 
 func BenchmarkInfo(b *testing.B) {
-	logger := New(Writer(ioutil.Discard))
+	logger := New(SetWriter(ioutil.Discard))
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -44,8 +44,8 @@ func BenchmarkInfo(b *testing.B) {
 
 func BenchmarkContextFields(b *testing.B) {
 	logger := New(
-		Writer(ioutil.Discard),
-		Fields(String("string", "four!"),
+		SetWriter(ioutil.Discard),
+		SetFields(String("string", "four!"),
 			Time("time", time.Time{}),
 			Int("int", 123),
 			Float32("float", -2.203230293249593),
@@ -60,17 +60,17 @@ func BenchmarkContextFields(b *testing.B) {
 }
 
 func BenchmarkContextAppend(b *testing.B) {
-	logger := New(Writer(ioutil.Discard), Fields(String("foo", "bar")))
+	logger := New(SetWriter(ioutil.Discard), SetFields(String("foo", "bar")))
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			logger.With(Fields(String("bar", "baz")))
+			logger.With(SetFields(String("bar", "baz")))
 		}
 	})
 }
 
 func BenchmarkLogFields(b *testing.B) {
-	logger := New(Writer(ioutil.Discard))
+	logger := New(SetWriter(ioutil.Discard))
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
