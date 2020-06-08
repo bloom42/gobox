@@ -20,3 +20,5 @@ See `LICENSE.txt` and https://bloom.sh/licensing
 `graphql` is a fork of [github.com/machinebox/graphql](https://github.com/machinebox/graphql) <br>
 `email` is a fork of [github.com/jordan-wright/email](https://github.com/jordan-wright/email) <br>
 `database/sqlx` is a fork of [github.com/jmoiron/sqlx](https://github.com/jmoiron/sqlx) <br>
+`cli` is a fork of [github.com/spf13/cobra](https://github.com/spf13/cobra) <br>
+`cli/pflag` is a fork of [github.com/spf13/pflag](https://github.com/spf13/pflag) <br>
