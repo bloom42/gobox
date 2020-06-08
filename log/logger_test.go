@@ -250,7 +250,7 @@ func TestFieldsArrayEmpty(t *testing.T) {
 	out := &bytes.Buffer{}
 	log := New(SetWriter(out), SetFields(Timestamp(false)))
 	log.Log("", Strings("string", []string{}),
-		Errors("err", []error{}),
+		Errs("err", []error{}),
 		Bools("bool", []bool{}),
 		Ints("int", []int{}),
 		Ints8("int8", []int8{}),
@@ -276,7 +276,7 @@ func TestFieldsArraySingleElement(t *testing.T) {
 	out := &bytes.Buffer{}
 	log := New(SetWriter(out), SetFields(Timestamp(false)))
 	log.Log("", Strings("string", []string{"foo"}),
-		Errors("err", []error{errors.New("some error")}),
+		Errs("err", []error{errors.New("some error")}),
 		Bools("bool", []bool{true}),
 		Ints("int", []int{1}),
 		Ints8("int8", []int8{2}),
@@ -302,7 +302,7 @@ func TestFieldsArrayMultipleElement(t *testing.T) {
 	out := &bytes.Buffer{}
 	log := New(SetWriter(out), SetFields(Timestamp(false)))
 	log.Log("", Strings("string", []string{"foo", "bar"}),
-		Errors("err", []error{errors.New("some error"), nil}),
+		Errs("err", []error{errors.New("some error"), nil}),
 		Bools("bool", []bool{true, false}),
 		Ints("int", []int{1, 0}),
 		Ints8("int8", []int8{2, 0}),

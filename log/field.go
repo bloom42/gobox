@@ -191,9 +191,9 @@ func Err(key string, value error) Field {
 	}
 }
 
-// Errors adds the field key with errs as an array of serialized errors to the
+// Errs adds the field key with errs as an array of serialized errors to the
 // *Event context.
-func Errors(key string, value []error) Field {
+func Errs(key string, value []error) Field {
 	return func(e *Event) {
 		e.errors(key, value)
 	}
