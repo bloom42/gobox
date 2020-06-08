@@ -112,7 +112,7 @@ func RequestID(requestIDFieldName string) HandlerOption {
 
 // Handler is a helper middleware to log HTTP requests
 func Handler(logger log.Logger, options ...HandlerOption) func(next http.Handler) http.Handler {
-	logger = logger.With()
+	logger = logger.Clone()
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()

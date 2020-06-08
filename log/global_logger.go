@@ -1,21 +1,21 @@
 package log
 
-var globalLogger = New(SetCallerSkipFrameCount(4))
+var globalLogger = NewLogger(SetCallerSkipFrameCount(4))
 
 // SetGlobalLogger update the global logger
 func SetGlobalLogger(logger Logger) {
-	globalLogger = logger.With(SetCallerSkipFrameCount(4))
+	globalLogger = logger.Clone(SetCallerSkipFrameCount(4))
 }
 
 // GlobalLogger returns the global logger
 func GlobalLogger() Logger {
-	return globalLogger.With(SetCallerSkipFrameCount(3))
+	return globalLogger.Clone(SetCallerSkipFrameCount(3))
 }
 
-// With duplicates the global logger and update it's configuration.
-func With(options ...LoggerOption) Logger {
+// Clone duplicates the global logger and update it's configuration.
+func Clone(options ...LoggerOption) Logger {
 	options = append([]LoggerOption{SetCallerSkipFrameCount(3)}, options...)
-	return globalLogger.With(options...)
+	return globalLogger.Clone(options...)
 }
 
 // LogWithLevel logs a new message with the given level.
@@ -63,7 +63,7 @@ func Log(message string, fields ...Field) {
 
 // Append the fields to the internal logger's context.
 // It does not create a noew copy of the logger and rely on a mutex to enable thread safety,
-// so `Config(With(fields...))` often is preferable.
+// so `Config(Clone(fields...))` often is preferable.
 func Append(fields ...Field) {
 	globalLogger.Append(fields...)
 }

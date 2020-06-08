@@ -14,7 +14,7 @@ import (
 func TestLog(t *testing.T) {
 	t.Run("empty", func(t *testing.T) {
 		out := &bytes.Buffer{}
-		log := New(SetWriter(out), SetFields(Timestamp(false)))
+		log := NewLogger(SetWriter(out), SetFields(Timestamp(false)))
 		log.Log("")
 		if got, want := decodeIfBinaryToString(out.Bytes()), "{}\n"; got != want {
 			t.Errorf("invalid log output:\ngot:  %v\nwant: %v", got, want)
@@ -23,7 +23,7 @@ func TestLog(t *testing.T) {
 
 	t.Run("one-field", func(t *testing.T) {
 		out := &bytes.Buffer{}
-		log := New(SetWriter(out), SetFields(Timestamp(false)))
+		log := NewLogger(SetWriter(out), SetFields(Timestamp(false)))
 		log.Log("", String("foo", "bar"))
 		if got, want := decodeIfBinaryToString(out.Bytes()), `{"foo":"bar"}`+"\n"; got != want {
 			t.Errorf("invalid log output:\ngot:  %v\nwant: %v", got, want)
@@ -32,7 +32,7 @@ func TestLog(t *testing.T) {
 
 	t.Run("two-field", func(t *testing.T) {
 		out := &bytes.Buffer{}
-		log := New(SetWriter(out), SetFields(Timestamp(false)))
+		log := NewLogger(SetWriter(out), SetFields(Timestamp(false)))
 		log.Log("", String("foo", "bar"), Int("n", 123))
 		if got, want := decodeIfBinaryToString(out.Bytes()), `{"foo":"bar","n":123}`+"\n"; got != want {
 			t.Errorf("invalid log output:\ngot:  %v\nwant: %v", got, want)
@@ -43,7 +43,7 @@ func TestLog(t *testing.T) {
 func TestInfo(t *testing.T) {
 	t.Run("empty", func(t *testing.T) {
 		out := &bytes.Buffer{}
-		log := New(SetWriter(out), SetFields(Timestamp(false)))
+		log := NewLogger(SetWriter(out), SetFields(Timestamp(false)))
 		log.Info("")
 		if got, want := decodeIfBinaryToString(out.Bytes()), `{"level":"info"}`+"\n"; got != want {
 			t.Errorf("invalid log output:\ngot:  %v\nwant: %v", got, want)
@@ -52,7 +52,7 @@ func TestInfo(t *testing.T) {
 
 	t.Run("one-field", func(t *testing.T) {
 		out := &bytes.Buffer{}
-		log := New(SetWriter(out), SetFields(Timestamp(false)))
+		log := NewLogger(SetWriter(out), SetFields(Timestamp(false)))
 		log.Info("", String("foo", "bar"))
 		if got, want := decodeIfBinaryToString(out.Bytes()), `{"level":"info","foo":"bar"}`+"\n"; got != want {
 			t.Errorf("invalid log output:\ngot:  %v\nwant: %v", got, want)
@@ -61,7 +61,7 @@ func TestInfo(t *testing.T) {
 
 	t.Run("two-field", func(t *testing.T) {
 		out := &bytes.Buffer{}
-		log := New(SetWriter(out), SetFields(Timestamp(false)))
+		log := NewLogger(SetWriter(out), SetFields(Timestamp(false)))
 		log.Info("", String("foo", "bar"), Int("n", 123))
 		if got, want := decodeIfBinaryToString(out.Bytes()), `{"level":"info","foo":"bar","n":123}`+"\n"; got != want {
 			t.Errorf("invalid log output:\ngot:  %v\nwant: %v", got, want)
@@ -71,7 +71,7 @@ func TestInfo(t *testing.T) {
 
 func TestSetFields(t *testing.T) {
 	out := &bytes.Buffer{}
-	log := New(
+	log := NewLogger(
 		SetWriter(out),
 		SetFields(
 			Timestamp(false),
@@ -107,7 +107,7 @@ func TestSetFields(t *testing.T) {
 
 func TestFieldsMap(t *testing.T) {
 	out := &bytes.Buffer{}
-	log := New(SetWriter(out), SetFields(Timestamp(false)))
+	log := NewLogger(SetWriter(out), SetFields(Timestamp(false)))
 	log.Log("", Map(map[string]interface{}{
 		"nil":     nil,
 		"string":  "foo",
@@ -139,7 +139,7 @@ func TestFieldsMap(t *testing.T) {
 
 func TestFieldsMapPnt(t *testing.T) {
 	out := &bytes.Buffer{}
-	log := New(SetWriter(out), SetFields(Timestamp(false)))
+	log := NewLogger(SetWriter(out), SetFields(Timestamp(false)))
 	log.Log("", Map(map[string]interface{}{
 		"string":  new(string),
 		"bool":    new(bool),
@@ -184,7 +184,7 @@ func TestFieldsMapNilPnt(t *testing.T) {
 		timePnt    *time.Time
 	)
 	out := &bytes.Buffer{}
-	log := New(SetWriter(out), SetFields(Timestamp(false)))
+	log := NewLogger(SetWriter(out), SetFields(Timestamp(false)))
 	fields := map[string]interface{}{
 		"string":  stringPnt,
 		"bool":    boolPnt,
@@ -211,7 +211,7 @@ func TestFieldsMapNilPnt(t *testing.T) {
 
 func TestFields2(t *testing.T) {
 	out := &bytes.Buffer{}
-	log := New(SetWriter(out), SetFields(Timestamp(false)))
+	log := NewLogger(SetWriter(out), SetFields(Timestamp(false)))
 	_, file, line, _ := runtime.Caller(0)
 	caller := fmt.Sprintf("%s:%d", file, line+2)
 	log.Log("", Caller(true),
@@ -248,7 +248,7 @@ func TestFields2(t *testing.T) {
 
 func TestFieldsArrayEmpty(t *testing.T) {
 	out := &bytes.Buffer{}
-	log := New(SetWriter(out), SetFields(Timestamp(false)))
+	log := NewLogger(SetWriter(out), SetFields(Timestamp(false)))
 	log.Log("", Strings("string", []string{}),
 		Errors("err", []error{}),
 		Bools("bool", []bool{}),
@@ -274,7 +274,7 @@ func TestFieldsArrayEmpty(t *testing.T) {
 
 func TestFieldsArraySingleElement(t *testing.T) {
 	out := &bytes.Buffer{}
-	log := New(SetWriter(out), SetFields(Timestamp(false)))
+	log := NewLogger(SetWriter(out), SetFields(Timestamp(false)))
 	log.Log("", Strings("string", []string{"foo"}),
 		Errors("err", []error{errors.New("some error")}),
 		Bools("bool", []bool{true}),
@@ -300,7 +300,7 @@ func TestFieldsArraySingleElement(t *testing.T) {
 
 func TestFieldsArrayMultipleElement(t *testing.T) {
 	out := &bytes.Buffer{}
-	log := New(SetWriter(out), SetFields(Timestamp(false)))
+	log := NewLogger(SetWriter(out), SetFields(Timestamp(false)))
 	log.Log("", Strings("string", []string{"foo", "bar"}),
 		Errors("err", []error{errors.New("some error"), nil}),
 		Bools("bool", []bool{true, false}),
@@ -326,7 +326,7 @@ func TestFieldsArrayMultipleElement(t *testing.T) {
 
 func TestFieldsDisabled(t *testing.T) {
 	out := &bytes.Buffer{}
-	log := New(SetWriter(out), SetFields(Timestamp(false)), SetLevel(InfoLevel))
+	log := NewLogger(SetWriter(out), SetFields(Timestamp(false)), SetLevel(InfoLevel))
 	log.Debug("", String("string", "foo"),
 		Bytes("bytes", []byte("bar")),
 		Hex("hex", []byte{0x12, 0xef}),
@@ -354,7 +354,7 @@ func TestFieldsDisabled(t *testing.T) {
 
 func TestFieldsAndFieldsCombined(t *testing.T) {
 	out := &bytes.Buffer{}
-	log := New(SetWriter(out), SetFields(Timestamp(false)), SetFields(String("f1", "val"), String("f2", "val")))
+	log := NewLogger(SetWriter(out), SetFields(Timestamp(false)), SetFields(String("f1", "val"), String("f2", "val")))
 	log.Log("", String("f3", "val"))
 	if got, want := decodeIfBinaryToString(out.Bytes()), `{"f1":"val","f2":"val","f3":"val"}`+"\n"; got != want {
 		t.Errorf("invalid log output:\ngot:  %v\nwant: %v", got, want)
@@ -364,7 +364,7 @@ func TestFieldsAndFieldsCombined(t *testing.T) {
 func TestSetLevel(t *testing.T) {
 	t.Run("Disabled", func(t *testing.T) {
 		out := &bytes.Buffer{}
-		log := New(SetWriter(out), SetFields(Timestamp(false)), SetLevel(Disabled))
+		log := NewLogger(SetWriter(out), SetFields(Timestamp(false)), SetLevel(Disabled))
 		log.Info("test")
 		if got, want := decodeIfBinaryToString(out.Bytes()), ""; got != want {
 			t.Errorf("invalid log output:\ngot:  %v\nwant: %v", got, want)
@@ -373,7 +373,7 @@ func TestSetLevel(t *testing.T) {
 
 	t.Run("NoLevel/Disabled", func(t *testing.T) {
 		out := &bytes.Buffer{}
-		log := New(SetWriter(out), SetFields(Timestamp(false)), SetLevel(Disabled))
+		log := NewLogger(SetWriter(out), SetFields(Timestamp(false)), SetLevel(Disabled))
 		log.Log("test")
 		if got, want := decodeIfBinaryToString(out.Bytes()), ""; got != want {
 			t.Errorf("invalid log output:\ngot:  %v\nwant: %v", got, want)
@@ -382,7 +382,7 @@ func TestSetLevel(t *testing.T) {
 
 	t.Run("NoLevel/Info", func(t *testing.T) {
 		out := &bytes.Buffer{}
-		log := New(SetWriter(out), SetFields(Timestamp(false)), SetLevel(InfoLevel))
+		log := NewLogger(SetWriter(out), SetFields(Timestamp(false)), SetLevel(InfoLevel))
 		log.Log("test")
 		if got, want := decodeIfBinaryToString(out.Bytes()), `{"message":"test"}`+"\n"; got != want {
 			t.Errorf("invalid log output:\ngot:  %v\nwant: %v", got, want)
@@ -391,7 +391,7 @@ func TestSetLevel(t *testing.T) {
 
 	t.Run("NoLevel/Panic", func(t *testing.T) {
 		out := &bytes.Buffer{}
-		log := New(SetWriter(out), SetFields(Timestamp(false)), SetLevel(PanicLevel))
+		log := NewLogger(SetWriter(out), SetFields(Timestamp(false)), SetLevel(PanicLevel))
 		log.Log("test")
 		if got, want := decodeIfBinaryToString(out.Bytes()), `{"message":"test"}`+"\n"; got != want {
 			t.Errorf("invalid log output:\ngot:  %v\nwant: %v", got, want)
@@ -400,7 +400,7 @@ func TestSetLevel(t *testing.T) {
 
 	t.Run("NoLevel/Log", func(t *testing.T) {
 		out := &bytes.Buffer{}
-		log := New(SetWriter(out), SetFields(Timestamp(false)), SetLevel(InfoLevel))
+		log := NewLogger(SetWriter(out), SetFields(Timestamp(false)), SetLevel(InfoLevel))
 		log.Log("test")
 		if got, want := decodeIfBinaryToString(out.Bytes()), `{"message":"test"}`+"\n"; got != want {
 			t.Errorf("invalid log output:\ngot:  %v\nwant: %v", got, want)
@@ -409,7 +409,7 @@ func TestSetLevel(t *testing.T) {
 
 	t.Run("Info", func(t *testing.T) {
 		out := &bytes.Buffer{}
-		log := New(SetWriter(out), SetFields(Timestamp(false)), SetLevel(InfoLevel))
+		log := NewLogger(SetWriter(out), SetFields(Timestamp(false)), SetLevel(InfoLevel))
 		log.Info("test")
 		if got, want := decodeIfBinaryToString(out.Bytes()), `{"level":"info","message":"test"}`+"\n"; got != want {
 			t.Errorf("invalid log output:\ngot:  %v\nwant: %v", got, want)
@@ -419,7 +419,7 @@ func TestSetLevel(t *testing.T) {
 
 func TestSampling(t *testing.T) {
 	out := &bytes.Buffer{}
-	log := New(SetWriter(out), SetFields(Timestamp(false)), SetSampler(&SamplerBasic{N: 2}))
+	log := NewLogger(SetWriter(out), SetFields(Timestamp(false)), SetSampler(&SamplerBasic{N: 2}))
 	log.Log("", Int("i", 1))
 	log.Log("", Int("i", 2))
 	log.Log("", Int("i", 3))
@@ -431,7 +431,7 @@ func TestSampling(t *testing.T) {
 
 func TestDiscard(t *testing.T) {
 	out := &bytes.Buffer{}
-	log := New(SetWriter(out), SetFields(Timestamp(false)))
+	log := NewLogger(SetWriter(out), SetFields(Timestamp(false)))
 	log.Log("test123", String("a", "b"), Discard())
 	if got, want := decodeIfBinaryToString(out.Bytes()), ""; got != want {
 		t.Errorf("invalid log output:\ngot:  %v\nwant: %v", got, want)
@@ -471,7 +471,7 @@ func TestLevelWriter(t *testing.T) {
 			p string
 		}{},
 	}
-	log := New(SetWriter(lw), SetFields(Timestamp(false)))
+	log := NewLogger(SetWriter(lw), SetFields(Timestamp(false)))
 	log.Debug("1")
 	log.Info("2")
 	log.Warn("3")
@@ -500,7 +500,7 @@ func TestContextTimestamp(t *testing.T) {
 		return time.Date(2001, time.February, 3, 4, 5, 6, 7, time.UTC)
 	}
 	out := &bytes.Buffer{}
-	log := New(SetWriter(out), SetFields(String("foo", "bar")), SetTimestampFunc(tfn))
+	log := NewLogger(SetWriter(out), SetFields(String("foo", "bar")), SetTimestampFunc(tfn))
 	log.Log("hello world")
 
 	if got, want := decodeIfBinaryToString(out.Bytes()), `{"foo":"bar","timestamp":"2001-02-03T04:05:06Z","message":"hello world"}`+"\n"; got != want {
@@ -513,7 +513,7 @@ func TestEventTimestamp(t *testing.T) {
 		return time.Date(2001, time.February, 3, 4, 5, 6, 7, time.UTC)
 	}
 	out := &bytes.Buffer{}
-	log := New(SetWriter(out), SetFields(Timestamp(false), String("foo", "bar")), SetTimestampFunc(tfn))
+	log := NewLogger(SetWriter(out), SetFields(Timestamp(false), String("foo", "bar")), SetTimestampFunc(tfn))
 	log.Log("hello world", Timestamp(true))
 
 	if got, want := decodeIfBinaryToString(out.Bytes()), `{"foo":"bar","timestamp":"2001-02-03T04:05:06Z","message":"hello world"}`+"\n"; got != want {
@@ -531,7 +531,7 @@ func (l loggableError) MarshalLogObject(e *Event) {
 
 func TestErrorMarshalFunc(t *testing.T) {
 	out := &bytes.Buffer{}
-	log := New(SetWriter(out), SetFields(Timestamp(false)))
+	log := NewLogger(SetWriter(out), SetFields(Timestamp(false)))
 
 	// test default behavior
 	log.Log("msg", Err("error", errors.New("err")))
@@ -593,7 +593,7 @@ func TestErrorHandler(t *testing.T) {
 	ErrorHandler = func(err error) {
 		got = err
 	}
-	log := New(SetWriter(errWriter{want}))
+	log := NewLogger(SetWriter(errWriter{want}))
 	log.Log("test")
 	if got != want {
 		t.Errorf("ErrorHandler err = %#v, want %#v", got, want)
@@ -602,7 +602,7 @@ func TestErrorHandler(t *testing.T) {
 
 func TestWrite(t *testing.T) {
 	out := &bytes.Buffer{}
-	log := New(SetWriter(out), SetFields(Timestamp(false)))
+	log := NewLogger(SetWriter(out), SetFields(Timestamp(false)))
 	log.Write([]byte("test"))
 	if got, want := decodeIfBinaryToString(out.Bytes()), "{\"message\":\"test\"}\n"; got != want {
 		t.Errorf("invalid log output:\ngot:  %v\nwant: %v", got, want)

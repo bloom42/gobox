@@ -29,11 +29,11 @@ func (l *Logger) ToCtx(ctx context.Context) context.Context {
 //
 //     ctx := r.Context()
 //     l := log.FromCtx(ctx)
-//     l.With(...)
+//     l.Clone(...)
 func FromCtx(ctx context.Context) *Logger {
 	if l, ok := ctx.Value(ctxKey{}).(*Logger); ok {
 		return l
 	}
-	logger := New().With(SetFields(String("log.FromCtx", "error")))
+	logger := NewLogger().Clone(SetFields(String("log.FromCtx", "error")))
 	return &logger
 }

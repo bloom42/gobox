@@ -42,11 +42,11 @@ func TestHook(t *testing.T) {
 		test func(log Logger)
 	}{
 		{"Message", `{"level_name":"nolevel","message":"test message"}` + "\n", func(log Logger) {
-			log = log.With(SetHooks(levelNameHook))
+			log = log.Clone(SetHooks(levelNameHook))
 			log.Log("test message")
 		}},
 		{"NoLevel", `{"level_name":"nolevel"}` + "\n", func(log Logger) {
-			log = log.With(SetHooks(levelNameHook))
+			log = log.Clone(SetHooks(levelNameHook))
 			log.Log("")
 		}},
 		// {"Print", `{"level":"debug","level_name":"debug"}` + "\n", func(log Logger) {
@@ -75,47 +75,47 @@ func TestHook(t *testing.T) {
 		// }},
 		// {"Output/single/pre", `{"level":"error","level_name":"error"}` + "\n", func(log Logger) {
 		// 	ignored := &bytes.Buffer{}
-		// 	log = New(ignored).Hook(levelNameHook).Output(log.w)
+		// 	log = NewLogger(ignored).Hook(levelNameHook).Output(log.w)
 		// 	log.Error().Msg("")
 		// }},
 		// {"Output/single/post", `{"level":"error","level_name":"error"}` + "\n", func(log Logger) {
 		// 	ignored := &bytes.Buffer{}
-		// 	log = New(ignored).Output(log.w).Hook(levelNameHook)
+		// 	log = NewLogger(ignored).Output(log.w).Hook(levelNameHook)
 		// 	log.Error().Msg("")
 		// }},
 		// {"Output/multi/pre", `{"level":"error","level_name":"error","has_level":true,"test":"logged"}` + "\n", func(log Logger) {
 		// 	ignored := &bytes.Buffer{}
-		// 	log = New(ignored).Hook(levelNameHook).Hook(simpleHook).Output(log.w)
+		// 	log = NewLogger(ignored).Hook(levelNameHook).Hook(simpleHook).Output(log.w)
 		// 	log.Error().Msg("")
 		// }},
 		// {"Output/multi/post", `{"level":"error","level_name":"error","has_level":true,"test":"logged"}` + "\n", func(log Logger) {
 		// 	ignored := &bytes.Buffer{}
-		// 	log = New(ignored).Output(log.w).Hook(levelNameHook).Hook(simpleHook)
+		// 	log = NewLogger(ignored).Output(log.w).Hook(levelNameHook).Hook(simpleHook)
 		// 	log.Error().Msg("")
 		// }},
 		// {"Output/mixed", `{"level":"error","level_name":"error","has_level":true,"test":"logged"}` + "\n", func(log Logger) {
 		// 	ignored := &bytes.Buffer{}
-		// 	log = New(ignored).Hook(levelNameHook).Output(log.w).Hook(simpleHook)
+		// 	log = NewLogger(ignored).Hook(levelNameHook).Output(log.w).Hook(simpleHook)
 		// 	log.Error().Msg("")
 		// }},
 		// {"With/single/pre", `{"level":"error","with":"pre","level_name":"error"}` + "\n", func(log Logger) {
-		// 	log = log.Hook(levelNameHook).With().Str("with", "pre").Logger()
+		// 	log = log.Hook(levelNameHook).Clone().Str("with", "pre").Logger()
 		// 	log.Error().Msg("")
 		// }},
 		// {"With/single/post", `{"level":"error","with":"post","level_name":"error"}` + "\n", func(log Logger) {
-		// 	log = log.With().Str("with", "post").Logger().Hook(levelNameHook)
+		// 	log = log.Clone().Str("with", "post").Logger().Hook(levelNameHook)
 		// 	log.Error().Msg("")
 		// }},
 		// {"With/multi/pre", `{"level":"error","with":"pre","level_name":"error","has_level":true,"test":"logged"}` + "\n", func(log Logger) {
-		// 	log = log.Hook(levelNameHook).Hook(simpleHook).With().Str("with", "pre").Logger()
+		// 	log = log.Hook(levelNameHook).Hook(simpleHook).Clone().Str("with", "pre").Logger()
 		// 	log.Error().Msg("")
 		// }},
 		// {"With/multi/post", `{"level":"error","with":"post","level_name":"error","has_level":true,"test":"logged"}` + "\n", func(log Logger) {
-		// 	log = log.With().Str("with", "post").Logger().Hook(levelNameHook).Hook(simpleHook)
+		// 	log = log.Clone().Str("with", "post").Logger().Hook(levelNameHook).Hook(simpleHook)
 		// 	log.Error().Msg("")
 		// }},
 		// {"With/mixed", `{"level":"error","with":"mixed","level_name":"error","has_level":true,"test":"logged"}` + "\n", func(log Logger) {
-		// 	log = log.Hook(levelNameHook).With().Str("with", "mixed").Logger().Hook(simpleHook)
+		// 	log = log.Hook(levelNameHook).Clone().Str("with", "mixed").Logger().Hook(simpleHook)
 		// 	log.Error().Msg("")
 		// }},
 		// {"Discard", "", func(log Logger) {
@@ -130,7 +130,7 @@ func TestHook(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			out := &bytes.Buffer{}
-			log := New(SetWriter(out), SetFields(Timestamp(false)))
+			log := NewLogger(SetWriter(out), SetFields(Timestamp(false)))
 			tt.test(log)
 			if got, want := decodeIfBinaryToString(out.Bytes()), tt.want; got != want {
 				t.Errorf("invalid log output:\ngot:  %v\nwant: %v", got, want)
@@ -140,10 +140,10 @@ func TestHook(t *testing.T) {
 }
 
 func BenchmarkSetHooks(b *testing.B) {
-	logger := New(SetWriter(ioutil.Discard))
+	logger := NewLogger(SetWriter(ioutil.Discard))
 	b.ResetTimer()
 	b.Run("Nop/Single", func(b *testing.B) {
-		log := logger.With(SetHooks(nopHook))
+		log := logger.Clone(SetHooks(nopHook))
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
 				log.Log("")
@@ -151,7 +151,7 @@ func BenchmarkSetHooks(b *testing.B) {
 		})
 	})
 	b.Run("Nop/Multi", func(b *testing.B) {
-		log := logger.With(SetHooks(nopHook, nopHook))
+		log := logger.Clone(SetHooks(nopHook, nopHook))
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
 				log.Log("")
@@ -159,7 +159,7 @@ func BenchmarkSetHooks(b *testing.B) {
 		})
 	})
 	b.Run("Simple", func(b *testing.B) {
-		log := logger.With(SetHooks(simpleHook))
+		log := logger.Clone(SetHooks(simpleHook))
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
 				log.Log("")

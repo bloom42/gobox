@@ -38,14 +38,14 @@ type Logger struct {
 	encoder              Encoder
 }
 
-// New creates a root logger with given options. If the output writer implements
+// NewLogger creates a root logger with given options. If the output writer implements
 // the LevelWriter interface, the WriteLevel method will be called instead of the Write
 // one. Default writer is os.Stdout
 //
 // Each logging operation makes a single call to the Writer's Write method. There is no
 // guaranty on access serialization to the Writer. If your Writer is not thread safe,
 // you may consider using sync wrapper.
-func New(options ...LoggerOption) Logger {
+func NewLogger(options ...LoggerOption) Logger {
 	logger := Logger{
 		writer:               levelWriterAdapter{os.Stdout},
 		level:                DebugLevel,
@@ -61,16 +61,16 @@ func New(options ...LoggerOption) Logger {
 		contextMutex:         &sync.Mutex{},
 		encoder:              json.Encoder{},
 	}
-	return logger.With(options...)
+	return logger.Clone(options...)
 }
 
-// Nop returns a disabled logger for which all operation are no-op.
-func Nop() Logger {
-	return New(SetWriter(nil), SetLevel(Disabled))
+// NewNopLogger returns a disabled logger for which all operation are no-op.
+func NewNopLogger() Logger {
+	return NewLogger(SetWriter(nil), SetLevel(Disabled))
 }
 
-// With create a new copy of the logger and apply all the options to the new logger
-func (l Logger) With(options ...LoggerOption) Logger {
+// Clone create a new clone of the logger and apply all the options to the new logger
+func (l Logger) Clone(options ...LoggerOption) Logger {
 	oldContext := l.context
 	l.context = make([]byte, 0, 500)
 	l.contextMutex = &sync.Mutex{}
@@ -249,7 +249,7 @@ func (l *Logger) should(lvl Level) bool {
 
 // Append the fields to the internal logger's context.
 // It does not create a noew copy of the logger and rely on a mutex to enable thread safety,
-// so `With(Fields(fields...))` often is preferable.
+// so `Clone(Fields(fields...))` often is preferable.
 func (l *Logger) Append(fields ...Field) {
 	e := newEvent(l.writer, l.level)
 	e.buf = nil

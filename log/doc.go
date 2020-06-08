@@ -23,7 +23,7 @@
 //
 // Sub-loggers let you chain loggers with additional context:
 //
-//     sublogger := log.Config(log.With(log.String("component": "foo")))
+//     sublogger := log.Clone(log.String("component", "foo"))
 //     sublogger.Info("hello world", nil)
 //
 //     // Output: {"timestamp":"2019-02-07T09:30:07Z","level":"info","message":"hello world","component":"foo"}
