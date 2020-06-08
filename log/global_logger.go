@@ -1,6 +1,6 @@
 package log
 
-var globalLogger = NewLogger(SetCallerSkipFrameCount(4))
+var globalLogger = New(SetCallerSkipFrameCount(4))
 
 // SetGlobalLogger update the global logger
 func SetGlobalLogger(logger Logger) {

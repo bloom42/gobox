@@ -13,7 +13,7 @@ var (
 )
 
 func BenchmarkLogEmpty(b *testing.B) {
-	logger := NewLogger(SetWriter(ioutil.Discard))
+	logger := New(SetWriter(ioutil.Discard))
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -23,7 +23,7 @@ func BenchmarkLogEmpty(b *testing.B) {
 }
 
 func BenchmarkDisabled(b *testing.B) {
-	logger := NewLogger(SetWriter(ioutil.Discard), SetLevel(Disabled))
+	logger := New(SetWriter(ioutil.Discard), SetLevel(Disabled))
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -33,7 +33,7 @@ func BenchmarkDisabled(b *testing.B) {
 }
 
 func BenchmarkInfo(b *testing.B) {
-	logger := NewLogger(SetWriter(ioutil.Discard))
+	logger := New(SetWriter(ioutil.Discard))
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -43,7 +43,7 @@ func BenchmarkInfo(b *testing.B) {
 }
 
 func BenchmarkContextFields(b *testing.B) {
-	logger := NewLogger(
+	logger := New(
 		SetWriter(ioutil.Discard),
 		SetFields(String("string", "four!"),
 			Time("time", time.Time{}),
@@ -60,7 +60,7 @@ func BenchmarkContextFields(b *testing.B) {
 }
 
 func BenchmarkContextAppend(b *testing.B) {
-	logger := NewLogger(SetWriter(ioutil.Discard), SetFields(String("foo", "bar")))
+	logger := New(SetWriter(ioutil.Discard), SetFields(String("foo", "bar")))
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -70,7 +70,7 @@ func BenchmarkContextAppend(b *testing.B) {
 }
 
 func BenchmarkLogFields(b *testing.B) {
-	logger := NewLogger(SetWriter(ioutil.Discard))
+	logger := New(SetWriter(ioutil.Discard))
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -102,7 +102,7 @@ func (o obj) MarshalLogObject(e *Event) {
 // 	obj1 := obj{"a", "b", 2}
 // 	obj2 := obj{"c", "d", 3}
 // 	obj3 := obj{"e", "f", 4}
-// 	logger := NewLogger(ioutil.Discard)
+// 	logger := New(ioutil.Discard)
 // 	b.ResetTimer()
 // 	b.ReportAllocs()
 // 	for i := 0; i < b.N; i++ {
@@ -160,7 +160,7 @@ func (o obj) MarshalLogObject(e *Event) {
 // 		obj{"a", "a", 0},
 // 		obj{"a", "a", 0},
 // 	}
-// 	errs := []error{errors.NewLogger("a"), errors.NewLogger("b"), errors.NewLogger("c"), errors.NewLogger("d"), errors.NewLogger("e")}
+// 	errs := []error{errors.New("a"), errors.New("b"), errors.New("c"), errors.New("d"), errors.New("e")}
 // 	types := map[string]func(e *Event) *Event{
 // 		"Bool": func(e *Event) *Event {
 // 			return e.Bool("k", bools[0])
@@ -220,7 +220,7 @@ func (o obj) MarshalLogObject(e *Event) {
 // 			return e.Object("k", objects[0])
 // 		},
 // 	}
-// 	logger := NewLogger(ioutil.Discard)
+// 	logger := New(ioutil.Discard)
 // 	b.ResetTimer()
 // 	for name := range types {
 // 		f := types[name]
@@ -283,7 +283,7 @@ func (o obj) MarshalLogObject(e *Event) {
 // 		obj{"a", "a", 0},
 // 		obj{"a", "a", 0},
 // 	}
-// 	errs := []error{errors.NewLogger("a"), errors.NewLogger("b"), errors.NewLogger("c"), errors.NewLogger("d"), errors.NewLogger("e")}
+// 	errs := []error{errors.New("a"), errors.New("b"), errors.New("c"), errors.New("d"), errors.New("e")}
 // 	types := map[string]func(c Context) Context{
 // 		"Bool": func(c Context) Context {
 // 			return c.Bool("k", bools[0])
@@ -346,7 +346,7 @@ func (o obj) MarshalLogObject(e *Event) {
 // 			return c.Timestamp()
 // 		},
 // 	}
-// 	logger := NewLogger(ioutil.Discard)
+// 	logger := New(ioutil.Discard)
 // 	b.ResetTimer()
 // 	for name := range types {
 // 		f := types[name]

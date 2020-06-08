@@ -75,27 +75,27 @@ func TestHook(t *testing.T) {
 		// }},
 		// {"Output/single/pre", `{"level":"error","level_name":"error"}` + "\n", func(log Logger) {
 		// 	ignored := &bytes.Buffer{}
-		// 	log = NewLogger(ignored).Hook(levelNameHook).Output(log.w)
+		// 	log = New(ignored).Hook(levelNameHook).Output(log.w)
 		// 	log.Error().Msg("")
 		// }},
 		// {"Output/single/post", `{"level":"error","level_name":"error"}` + "\n", func(log Logger) {
 		// 	ignored := &bytes.Buffer{}
-		// 	log = NewLogger(ignored).Output(log.w).Hook(levelNameHook)
+		// 	log = New(ignored).Output(log.w).Hook(levelNameHook)
 		// 	log.Error().Msg("")
 		// }},
 		// {"Output/multi/pre", `{"level":"error","level_name":"error","has_level":true,"test":"logged"}` + "\n", func(log Logger) {
 		// 	ignored := &bytes.Buffer{}
-		// 	log = NewLogger(ignored).Hook(levelNameHook).Hook(simpleHook).Output(log.w)
+		// 	log = New(ignored).Hook(levelNameHook).Hook(simpleHook).Output(log.w)
 		// 	log.Error().Msg("")
 		// }},
 		// {"Output/multi/post", `{"level":"error","level_name":"error","has_level":true,"test":"logged"}` + "\n", func(log Logger) {
 		// 	ignored := &bytes.Buffer{}
-		// 	log = NewLogger(ignored).Output(log.w).Hook(levelNameHook).Hook(simpleHook)
+		// 	log = New(ignored).Output(log.w).Hook(levelNameHook).Hook(simpleHook)
 		// 	log.Error().Msg("")
 		// }},
 		// {"Output/mixed", `{"level":"error","level_name":"error","has_level":true,"test":"logged"}` + "\n", func(log Logger) {
 		// 	ignored := &bytes.Buffer{}
-		// 	log = NewLogger(ignored).Hook(levelNameHook).Output(log.w).Hook(simpleHook)
+		// 	log = New(ignored).Hook(levelNameHook).Output(log.w).Hook(simpleHook)
 		// 	log.Error().Msg("")
 		// }},
 		// {"With/single/pre", `{"level":"error","with":"pre","level_name":"error"}` + "\n", func(log Logger) {
@@ -130,7 +130,7 @@ func TestHook(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			out := &bytes.Buffer{}
-			log := NewLogger(SetWriter(out), SetFields(Timestamp(false)))
+			log := New(SetWriter(out), SetFields(Timestamp(false)))
 			tt.test(log)
 			if got, want := decodeIfBinaryToString(out.Bytes()), tt.want; got != want {
 				t.Errorf("invalid log output:\ngot:  %v\nwant: %v", got, want)
@@ -140,7 +140,7 @@ func TestHook(t *testing.T) {
 }
 
 func BenchmarkSetHooks(b *testing.B) {
-	logger := NewLogger(SetWriter(ioutil.Discard))
+	logger := New(SetWriter(ioutil.Discard))
 	b.ResetTimer()
 	b.Run("Nop/Single", func(b *testing.B) {
 		log := logger.Clone(SetHooks(nopHook))

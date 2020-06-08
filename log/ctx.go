@@ -34,6 +34,6 @@ func FromCtx(ctx context.Context) *Logger {
 	if l, ok := ctx.Value(ctxKey{}).(*Logger); ok {
 		return l
 	}
-	logger := NewLogger().Clone(SetFields(String("log.FromCtx", "error")))
+	logger := New().Clone(SetFields(String("log.FromCtx", "error")))
 	return &logger
 }

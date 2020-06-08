@@ -1,6 +1,6 @@
 // Package log provides a lightweight logging library dedicated to JSON logging.
 //
-// A global Logger can be use for simple logging:
+// A global Logger can be used for simple logging:
 //
 //     import "gitlab.com/bloom42/gobox/log"
 //

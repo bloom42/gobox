@@ -3,14 +3,14 @@ package log_test
 import "gitlab.com/bloom42/gobox/log"
 
 func ExampleNew() {
-	log := log.NewLogger(log.SetFields(log.Timestamp(false)))
+	log := log.New(log.SetFields(log.Timestamp(false)))
 
 	log.Info("hello world")
 	// Output: {"level":"info","message":"hello world"}
 }
 
 func ExampleFields() {
-	log := log.NewLogger(log.SetFields(log.Timestamp(false), log.String("foo", "bar")))
+	log := log.New(log.SetFields(log.Timestamp(false), log.String("foo", "bar")))
 
 	log.Info("hello world")
 

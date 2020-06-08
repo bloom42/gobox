@@ -7,7 +7,7 @@ import (
 )
 
 func TestFromCtx(t *testing.T) {
-	log := NewLogger(SetWriter(ioutil.Discard))
+	log := New(SetWriter(ioutil.Discard))
 	ctx := log.ToCtx(context.Background())
 	log2 := FromCtx(ctx)
 	if &log != log2 {
@@ -29,13 +29,13 @@ func TestFromCtx(t *testing.T) {
 }
 
 func TestFromCtxDisabled(t *testing.T) {
-	dl := NewLogger(SetWriter(ioutil.Discard), SetLevel(Disabled))
+	dl := New(SetWriter(ioutil.Discard), SetLevel(Disabled))
 	ctx := dl.ToCtx(context.Background())
 	if ctx != context.Background() {
 		t.Error("ToCtx stored a disabled logger")
 	}
 
-	l := NewLogger(
+	l := New(
 		SetWriter(ioutil.Discard),
 		SetFields(String("foo", "bar")),
 	)

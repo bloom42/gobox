@@ -38,14 +38,14 @@ type Logger struct {
 	encoder              Encoder
 }
 
-// NewLogger creates a root logger with given options. If the output writer implements
+// New creates a root logger with given options. If the output writer implements
 // the LevelWriter interface, the WriteLevel method will be called instead of the Write
 // one. Default writer is os.Stdout
 //
 // Each logging operation makes a single call to the Writer's Write method. There is no
 // guaranty on access serialization to the Writer. If your Writer is not thread safe,
 // you may consider using sync wrapper.
-func NewLogger(options ...LoggerOption) Logger {
+func New(options ...LoggerOption) Logger {
 	logger := Logger{
 		writer:               levelWriterAdapter{os.Stdout},
 		level:                DebugLevel,
@@ -64,9 +64,9 @@ func NewLogger(options ...LoggerOption) Logger {
 	return logger.Clone(options...)
 }
 
-// NewNopLogger returns a disabled logger for which all operation are no-op.
-func NewNopLogger() Logger {
-	return NewLogger(SetWriter(nil), SetLevel(Disabled))
+// NewNop returns a disabled logger for which all operation are no-op.
+func NewNop() Logger {
+	return New(SetWriter(nil), SetLevel(Disabled))
 }
 
 // Clone create a new clone of the logger and apply all the options to the new logger

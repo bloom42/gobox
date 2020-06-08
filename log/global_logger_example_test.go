@@ -16,7 +16,7 @@ func setup() {
 	// In order to always output a static time to stdout for these
 	// examples to pass, we need to override log.SetTimestampFunc
 	// and log.Logger globals -- you would not normally need to do this
-	log.SetGlobalLogger(log.NewLogger(log.SetTimeFieldFormat(""), log.SetTimestampFunc(func() time.Time {
+	log.SetGlobalLogger(log.New(log.SetTimeFieldFormat(""), log.SetTimestampFunc(func() time.Time {
 		return time.Date(2008, 1, 8, 17, 5, 05, 0, time.UTC)
 	})))
 }
