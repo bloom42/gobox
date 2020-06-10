@@ -37,11 +37,11 @@ var defaultMailer *Mailer
 // Email is an email...
 // either Text or HTML must be provided
 type Email struct {
-	ReplyTo     []*mail.Address
-	From        *mail.Address
-	To          []*mail.Address
-	Bcc         []*mail.Address
-	Cc          []*mail.Address
+	ReplyTo     []mail.Address
+	From        mail.Address
+	To          []mail.Address
+	Bcc         []mail.Address
+	Cc          []mail.Address
 	Subject     string
 	Text        []byte // Plaintext message
 	HTML        []byte // Html message
@@ -50,6 +50,7 @@ type Email struct {
 	// ReadReceipt []string
 }
 
+// Bytes returns the content of the email in the bytes form
 func (email *Email) Bytes() ([]byte, error) {
 	buffer := bytes.NewBuffer([]byte{})
 	hasAttachements := len(email.Attachments) > 0
@@ -197,13 +198,13 @@ func (mailer *Mailer) Send(email Email) error {
 	}
 
 	// Merge the To, Cc, and Bcc fields
-	to := make([]*mail.Address, 0, len(email.To)+len(email.Cc)+len(email.Bcc))
+	to := make([]mail.Address, 0, len(email.To)+len(email.Cc)+len(email.Bcc))
 	to = append(to, email.To...)
 	to = append(to, email.Bcc...)
 	to = append(to, email.Cc...)
 
-	// Check to make sure there is at least one recipient and one "From" address
-	if email.From == nil || len(to) == 0 {
+	// Check to make sure there is at least one recipient
+	if len(to) == 0 {
 		return errors.New("email: Must specify at least one From address and one To address")
 	}
 
@@ -220,16 +221,19 @@ func (mailer *Mailer) Send(email Email) error {
 	return smtp.SendMail(mailer.smtpAddress, mailer.smtpAuth, email.From.Address, toAddresses, rawEmail)
 }
 
-func NewMailer(config SMTPConfig) *Mailer {
+// NewMailer returns a new mailer
+func NewMailer(config SMTPConfig) Mailer {
 	smtpAuth := smtp.PlainAuth("", config.Username, config.Password, config.Host)
-	return &Mailer{
+	return Mailer{
 		smtpAuth:    smtpAuth,
 		smtpAddress: fmt.Sprintf("%s:%d", config.Host, config.Port),
 	}
 }
 
+// InitDefaultMailer set the default, global mailer
 func InitDefaultMailer(config SMTPConfig) {
-	defaultMailer = NewMailer(config)
+	mailer := NewMailer(config)
+	defaultMailer = &mailer
 }
 
 // Send an email using the default mailer
@@ -329,7 +333,7 @@ func base64Wrap(writer io.Writer, b []byte) {
 	}
 }
 
-func mailAddressesToStrings(addresses []*mail.Address) []string {
+func mailAddressesToStrings(addresses []mail.Address) []string {
 	ret := make([]string, len(addresses))
 
 	for i, address := range addresses {
