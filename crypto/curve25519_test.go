@@ -58,3 +58,45 @@ func TestCurve25519EncryptDecryptEphemeral(t *testing.T) {
 		t.Errorf("Message (%s) and plaintext (%s) don't match", string(message), string(plaintext))
 	}
 }
+
+func TestCurve25519KeyExchange(t *testing.T) {
+	publicKey1, privateKey1, err := GenerateCurve25519KeyPair()
+	if err != nil {
+		t.Error(err)
+	}
+
+	publicKey2, privateKey2, err := GenerateCurve25519KeyPair()
+	if err != nil {
+		t.Error(err)
+	}
+
+	sharedSecret1, err := privateKey1.KeyExchange(publicKey2)
+	if err != nil {
+		t.Error(err)
+	}
+
+	sharedSecret2, err := privateKey2.KeyExchange(publicKey1)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if !ConstantTimeCompare(sharedSecret1, sharedSecret2) {
+		t.Error("SharedSecret1 != SharedSecret2")
+	}
+}
+
+func TestCurve25519PrivateKeyPublic(t *testing.T) {
+	publicKey, privateKey, err := GenerateCurve25519KeyPair()
+	if err != nil {
+		t.Error(err)
+	}
+
+	publicKey2, err := privateKey.Public()
+	if err != nil {
+		t.Error(err)
+	}
+
+	if !ConstantTimeCompare(publicKey, publicKey2) {
+		t.Error("publicKey != publicKey2")
+	}
+}
