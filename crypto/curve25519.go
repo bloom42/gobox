@@ -4,16 +4,43 @@ import (
 	"golang.org/x/crypto/curve25519"
 )
 
-// Encrypt convert the PublicKey to a `curve25519` public key using `ToCurve25519PublicKey`,
-// the privateKey to a `curve25519` prviate key using `ToCurve25519PrivateKey`,
-// then perform a x25519 key exchange, and finally encrypt the message using `XChaCha20-Poly1305` with
-// the shared secret as key and nonce as nonce.
-func (publicKey PublicKey) Encrypt(fromPrivateKey PrivateKey, nonce []byte, message []byte) (ciphertext []byte, err error) {
-	curve25519PublicKey := publicKey.ToCurve25519PublicKey()
-	curve25519FromPrivateKey := fromPrivateKey.ToCurve25519PrivateKey()
-	defer Zeroize(curve25519FromPrivateKey)
+const (
+	// Curve25519PublicKeySize is the size, in bytes, of public keys as used in this package.
+	Curve25519PublicKeySize = curve25519.PointSize
 
-	sharedSecret, err := curve25519.X25519(curve25519FromPrivateKey, curve25519PublicKey)
+	// Curve25519PrivateKeySize is the size, in bytes, of private keys as used in this package.
+	Curve25519PrivateKeySize = curve25519.ScalarSize
+
+	// X25519SharedSecretSize is the size, in bytes of the shared secret of a x25519 key exchange
+	X25519SharedSecretSize = 32
+)
+
+// GenerateCurve25519KeyPair generates a public/private Curve25519 key pair
+func GenerateCurve25519KeyPair() (publicKey Curve25519PublicKey, privateKey Curve25519PrivateKey, err error) {
+	privateKey, err = RandBytes(Curve25519PrivateKeySize)
+	if err != nil {
+		return
+	}
+
+	publicKey, err = privateKey.Public()
+	return
+}
+
+// Curve25519PublicKey is the type of Curve25519 public keys.
+type Curve25519PublicKey []byte
+
+// KeyExchange performs a x25519 key exchange with the given public key
+func (publicKey Curve25519PublicKey) KeyExchange(privateKey Curve25519PrivateKey) (sharedSecret []byte, err error) {
+	sharedSecret, err = curve25519.X25519(privateKey, publicKey)
+	return
+}
+
+// Encrypt performs a x25519 key exchange, and encrypt the message using `XChaCha20-Poly1305` with
+// the shared secret as key and nonce as nonce.
+func (publicKey Curve25519PublicKey) Encrypt(fromPrivateKey Curve25519PrivateKey, nonce []byte,
+	message []byte) (ciphertext []byte, err error) {
+
+	sharedSecret, err := publicKey.KeyExchange(fromPrivateKey)
 	defer Zeroize(sharedSecret)
 	if err != nil {
 		return
@@ -28,10 +55,10 @@ func (publicKey PublicKey) Encrypt(fromPrivateKey PrivateKey, nonce []byte, mess
 	return
 }
 
-// EncryptEphemeral generates an ephemeral keyPair and `Encrypt` message using the public key,
+// EncryptEphemeral generates an ephemeral Curve25519KeyPair and `Encrypt` message using the public key,
 // the ephemeral privateKey and `blake2b(size=AEADNonceSize, message=ephemeralPublicKey || publicKey)` as nonce
-func (publicKey PublicKey) EncryptEphemeral(message []byte) (ciphertext []byte, ephemeralPublicKey PublicKey, err error) {
-	ephemeralPublicKey, ephemeralPrivateKey, err := GenerateKeyPair(RandReader())
+func (publicKey Curve25519PublicKey) EncryptEphemeral(message []byte) (ciphertext []byte, ephemeralPublicKey Curve25519PublicKey, err error) {
+	ephemeralPublicKey, ephemeralPrivateKey, err := GenerateCurve25519KeyPair()
 	defer Zeroize(ephemeralPrivateKey)
 	if err != nil {
 		return
@@ -52,16 +79,25 @@ func (publicKey PublicKey) EncryptEphemeral(message []byte) (ciphertext []byte, 
 	return
 }
 
-// Decrypt convert the privateKey to a `curve25519` prviate key using `ToCurve25519PrivateKey`,
-// the fromPublicKey to a `curve25519` public keys using `ToCurve25519PublicKey`,
-// then perform a x25519 key exchange, and finally decrypt the ciphertext using `XChaCha20-Poly1305` with
-// the shared secret as key and nonce as nonce.
-func (privateKey PrivateKey) Decrypt(fromPublicKey PublicKey, nonce []byte, ciphertext []byte) (plaintext []byte, err error) {
-	curve25519FromPublicKey := fromPublicKey.ToCurve25519PublicKey()
-	curve25519PrivateKey := privateKey.ToCurve25519PrivateKey()
-	defer Zeroize(curve25519PrivateKey)
+// Curve25519PrivateKey is the type of Curve25519 private keys.
+type Curve25519PrivateKey []byte
 
-	sharedSecret, err := curve25519.X25519(curve25519PrivateKey, curve25519FromPublicKey)
+// Public returns the Curve25519PublicKey corresponding to privateKey.
+func (privateKey Curve25519PrivateKey) Public() (publicKey Curve25519PublicKey, err error) {
+	publicKey, err = curve25519.X25519(privateKey, curve25519.Basepoint)
+	return
+}
+
+// KeyExchange performs a x25519 key exchange with the given public key
+func (privateKey Curve25519PrivateKey) KeyExchange(publicKey Curve25519PublicKey) (sharedSecret []byte, err error) {
+	sharedSecret, err = curve25519.X25519(privateKey, publicKey)
+	return
+}
+
+// Decrypt performs a x25519 key exchange, and decrypt the ciphertext using `XChaCha20-Poly1305` with
+// the shared secret as key and nonce as nonce.
+func (privateKey Curve25519PrivateKey) Decrypt(fromPublicKey Curve25519PublicKey, nonce []byte, ciphertext []byte) (plaintext []byte, err error) {
+	sharedSecret, err := privateKey.KeyExchange(fromPublicKey)
 	defer Zeroize(sharedSecret)
 	if err != nil {
 		return
@@ -78,9 +114,12 @@ func (privateKey PrivateKey) Decrypt(fromPublicKey PublicKey, nonce []byte, ciph
 
 // DecryptEphemeral generates a noce with `blake2b(size=AEADNonceSize, message=ephemeralPublicKey || privateKey.PublicKey())`
 // and decrypt the `ciphertext` using `Decrypt`
-func (privateKey PrivateKey) DecryptEphemeral(ephemeralPublicKey PublicKey, ciphertext []byte) (plaintext []byte, err error) {
+func (privateKey Curve25519PrivateKey) DecryptEphemeral(ephemeralPublicKey Curve25519PublicKey, ciphertext []byte) (plaintext []byte, err error) {
 	var nonceMessage []byte
-	myPublicKey := privateKey.Public()
+	myPublicKey, err := privateKey.Public()
+	if err != nil {
+		return
+	}
 
 	// generate nonce
 	nonceMessage = append(nonceMessage, []byte(ephemeralPublicKey)...)

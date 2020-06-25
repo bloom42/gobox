@@ -1,20 +1,22 @@
 package crypto
 
+import (
+	"testing"
+)
 
-
-func TestPrivateKeyEncryptDecrypt(t *testing.T) {
+func TestCurve25519EncryptDecrypt(t *testing.T) {
 	message := []byte("this is a simple message")
 	nonce, err := RandBytes(AEADNonceSize)
 	if err != nil {
 		t.Error(err)
 	}
 
-	toPublicKey, toPrivateKey, err := GenerateKeyPair(RandReader())
+	toPublicKey, toPrivateKey, err := GenerateCurve25519KeyPair()
 	if err != nil {
 		t.Error(err)
 	}
 
-	fromPublicKey, fromPrivateKey, err := GenerateKeyPair(RandReader())
+	fromPublicKey, fromPrivateKey, err := GenerateCurve25519KeyPair()
 	if err != nil {
 		t.Error(err)
 	}
@@ -34,10 +36,10 @@ func TestPrivateKeyEncryptDecrypt(t *testing.T) {
 	}
 }
 
-func TestPrivateKeyEncryptDecryptEphemeral(t *testing.T) {
+func TestCurve25519EncryptDecryptEphemeral(t *testing.T) {
 	message := []byte("this is a simple message")
 
-	toPublicKey, toPrivateKey, err := GenerateKeyPair(RandReader())
+	toPublicKey, toPrivateKey, err := GenerateCurve25519KeyPair()
 	if err != nil {
 		t.Error(err)
 	}
