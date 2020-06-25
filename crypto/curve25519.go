@@ -29,7 +29,7 @@ func GenerateCurve25519KeyPair() (publicKey Curve25519PublicKey, privateKey Curv
 // Curve25519PublicKey is the type of Curve25519 public keys.
 type Curve25519PublicKey []byte
 
-// KeyExchange performs a x25519 key exchange with the given public key
+// KeyExchange performs a x25519 key exchange with the given private key
 func (publicKey Curve25519PublicKey) KeyExchange(privateKey Curve25519PrivateKey) (sharedSecret []byte, err error) {
 	sharedSecret, err = curve25519.X25519(privateKey, publicKey)
 	return
@@ -39,7 +39,6 @@ func (publicKey Curve25519PublicKey) KeyExchange(privateKey Curve25519PrivateKey
 // the shared secret as key and nonce as nonce.
 func (publicKey Curve25519PublicKey) Encrypt(fromPrivateKey Curve25519PrivateKey, nonce []byte,
 	message []byte) (ciphertext []byte, err error) {
-
 	sharedSecret, err := publicKey.KeyExchange(fromPrivateKey)
 	defer Zeroize(sharedSecret)
 	if err != nil {
@@ -64,8 +63,18 @@ func (publicKey Curve25519PublicKey) EncryptEphemeral(message []byte) (ciphertex
 		return
 	}
 
-	// generate nonce
+	nonce, err := generateNonce(ephemeralPublicKey, publicKey)
+	if err != nil {
+		return
+	}
+
+	ciphertext, err = publicKey.Encrypt(ephemeralPrivateKey, nonce, message)
+	return
+}
+
+func generateNonce(ephemeralPublicKey, publicKey Curve25519PublicKey) (nonce []byte, err error) {
 	var nonceMessage []byte
+
 	nonceMessage = append(nonceMessage, []byte(ephemeralPublicKey)...)
 	nonceMessage = append(nonceMessage, []byte(publicKey)...)
 	hash, err := NewHash(AEADNonceSize, nil)
@@ -73,9 +82,7 @@ func (publicKey Curve25519PublicKey) EncryptEphemeral(message []byte) (ciphertex
 		return
 	}
 	hash.Write(nonceMessage)
-	nonce := hash.Sum(nil)
-
-	ciphertext, err = publicKey.Encrypt(ephemeralPrivateKey, nonce, message)
+	nonce = hash.Sum(nil)
 	return
 }
 
@@ -115,21 +122,15 @@ func (privateKey Curve25519PrivateKey) Decrypt(fromPublicKey Curve25519PublicKey
 // DecryptEphemeral generates a noce with `blake2b(size=AEADNonceSize, message=ephemeralPublicKey || privateKey.PublicKey())`
 // and decrypt the `ciphertext` using `Decrypt`
 func (privateKey Curve25519PrivateKey) DecryptEphemeral(ephemeralPublicKey Curve25519PublicKey, ciphertext []byte) (plaintext []byte, err error) {
-	var nonceMessage []byte
 	myPublicKey, err := privateKey.Public()
 	if err != nil {
 		return
 	}
 
-	// generate nonce
-	nonceMessage = append(nonceMessage, []byte(ephemeralPublicKey)...)
-	nonceMessage = append(nonceMessage, []byte(myPublicKey)...)
-	hash, err := NewHash(AEADNonceSize, nil)
+	nonce, err := generateNonce(ephemeralPublicKey, myPublicKey)
 	if err != nil {
 		return
 	}
-	hash.Write(nonceMessage)
-	nonce := hash.Sum(nil)
 
 	return privateKey.Decrypt(ephemeralPublicKey, nonce, ciphertext)
 }
