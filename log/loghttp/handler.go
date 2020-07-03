@@ -1,6 +1,8 @@
 package loghttp
 
 import (
+	"bufio"
+	"errors"
 	"net"
 	"net/http"
 	"time"
@@ -150,6 +152,10 @@ func Handler(logger log.Logger, options ...HandlerOption) func(next http.Handler
 				resWrapper.CloseNotifier = c
 			}
 
+			if h, ok := w.(http.Hijacker); ok {
+				resWrapper.Hijacker = h
+			}
+
 			if handler.schemeField != "" {
 				scheme := "http"
 				if r.TLS != nil {
@@ -228,6 +234,7 @@ type responseWrapper struct {
 	http.ResponseWriter
 	http.Flusher
 	http.CloseNotifier
+	http.Hijacker
 
 	written int
 	status  int
@@ -251,4 +258,20 @@ func (w *responseWrapper) Flush() {
 	if w.Flusher != nil {
 		w.Flusher.Flush()
 	}
+}
+
+func (w *responseWrapper) CloseNotify() <-chan bool {
+	if w.CloseNotifier != nil {
+		return w.CloseNotifier.CloseNotify()
+	}
+	closeNotifyChan := make(chan bool, 1)
+	closeNotifyChan <- true
+	return closeNotifyChan
+}
+
+func (w *responseWrapper) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	if w.Hijacker != nil {
+		return w.Hijacker.Hijack()
+	}
+	return nil, nil, errors.New("loghttp: http.Hijecker not implemented")
 }
