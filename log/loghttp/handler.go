@@ -264,9 +264,7 @@ func (w *responseWrapper) CloseNotify() <-chan bool {
 	if w.CloseNotifier != nil {
 		return w.CloseNotifier.CloseNotify()
 	}
-	closeNotifyChan := make(chan bool, 1)
-	closeNotifyChan <- true
-	return closeNotifyChan
+	panic("loghttp: CloseNotify not implemented")
 }
 
 func (w *responseWrapper) Hijack() (net.Conn, *bufio.ReadWriter, error) {
