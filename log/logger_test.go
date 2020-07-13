@@ -113,6 +113,7 @@ func TestFieldsMap(t *testing.T) {
 		"string":  "foo",
 		"bytes":   []byte("bar"),
 		"error":   errors.New("some error"),
+		"errors":  []error{errors.New("some error"), errors.New("some other error")},
 		"bool":    true,
 		"int":     int(1),
 		"int8":    int8(2),
@@ -132,7 +133,7 @@ func TestFieldsMap(t *testing.T) {
 		"obj":     obj{"a", "b", 1},
 	}),
 	)
-	if got, want := decodeIfBinaryToString(out.Bytes()), `{"bool":true,"bytes":"bar","dur":1000,"error":"some error","float32":11,"float64":12,"int":1,"int16":3,"int32":4,"int64":5,"int8":2,"ipv6":"2001:db8:85a3::8a2e:370:7334","nil":null,"obj":{"Pub":"a","Tag":"b","priv":1},"string":"foo","time":"0001-01-01T00:00:00Z","uint":6,"uint16":8,"uint32":9,"uint64":10,"uint8":7}`+"\n"; got != want {
+	if got, want := decodeIfBinaryToString(out.Bytes()), `{"bool":true,"bytes":"bar","dur":1000,"error":"some error","errors":["some error","some other error"],"float32":11,"float64":12,"int":1,"int16":3,"int32":4,"int64":5,"int8":2,"ipv6":"2001:db8:85a3::8a2e:370:7334","nil":null,"obj":{"Pub":"a","Tag":"b","priv":1},"string":"foo","time":"0001-01-01T00:00:00Z","uint":6,"uint16":8,"uint32":9,"uint64":10,"uint8":7}`+"\n"; got != want {
 		t.Errorf("invalid log output:\ngot:  %v\nwant: %v", got, want)
 	}
 }

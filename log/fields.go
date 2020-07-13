@@ -64,7 +64,7 @@ func (e *Event) appendFields(dst []byte, fields map[string]interface{}) []byte {
 				}
 
 				if i < (len(val) - 1) {
-					enc.AppendArrayDelim(dst)
+					dst = enc.AppendArrayDelim(dst)
 				}
 			}
 			dst = enc.AppendArrayEnd(dst)
