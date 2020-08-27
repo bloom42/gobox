@@ -1,472 +1,1245 @@
 package env
 
 import (
-	"bytes"
+	"errors"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/url"
 	"os"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-var noopPresets = make(map[string]string)
-
-func parseAndCompare(t *testing.T, rawEnvLine string, expectedKey string, expectedValue string) {
-	key, value, _ := parseLine(rawEnvLine, noopPresets)
-	if key != expectedKey || value != expectedValue {
-		t.Errorf("Expected '%v' to parse as '%v' => '%v', got '%v' => '%v' instead", rawEnvLine, expectedKey, expectedValue, key, value)
-	}
+type unmarshaler struct {
+	time.Duration
 }
 
-func loadEnvAndCompareValues(t *testing.T, loader func(files ...string) error, envFileName string, expectedValues map[string]string, presets map[string]string) {
-	// first up, clear the env
+// TextUnmarshaler implements encoding.TextUnmarshaler
+func (d *unmarshaler) UnmarshalText(data []byte) (err error) {
+	if len(data) != 0 {
+		d.Duration, err = time.ParseDuration(string(data))
+	} else {
+		d.Duration = 0
+	}
+	return err
+}
+
+// nolint: maligned
+type Config struct {
+	String     string    `env:"STRING"`
+	StringPtr  *string   `env:"STRING"`
+	Strings    []string  `env:"STRINGS"`
+	StringPtrs []*string `env:"STRINGS"`
+
+	Bool     bool    `env:"BOOL"`
+	BoolPtr  *bool   `env:"BOOL"`
+	Bools    []bool  `env:"BOOLS"`
+	BoolPtrs []*bool `env:"BOOLS"`
+
+	Int     int    `env:"INT"`
+	IntPtr  *int   `env:"INT"`
+	Ints    []int  `env:"INTS"`
+	IntPtrs []*int `env:"INTS"`
+
+	Int8     int8    `env:"INT8"`
+	Int8Ptr  *int8   `env:"INT8"`
+	Int8s    []int8  `env:"INT8S"`
+	Int8Ptrs []*int8 `env:"INT8S"`
+
+	Int16     int16    `env:"INT16"`
+	Int16Ptr  *int16   `env:"INT16"`
+	Int16s    []int16  `env:"INT16S"`
+	Int16Ptrs []*int16 `env:"INT16S"`
+
+	Int32     int32    `env:"INT32"`
+	Int32Ptr  *int32   `env:"INT32"`
+	Int32s    []int32  `env:"INT32S"`
+	Int32Ptrs []*int32 `env:"INT32S"`
+
+	Int64     int64    `env:"INT64"`
+	Int64Ptr  *int64   `env:"INT64"`
+	Int64s    []int64  `env:"INT64S"`
+	Int64Ptrs []*int64 `env:"INT64S"`
+
+	Uint     uint    `env:"UINT"`
+	UintPtr  *uint   `env:"UINT"`
+	Uints    []uint  `env:"UINTS"`
+	UintPtrs []*uint `env:"UINTS"`
+
+	Uint8     uint8    `env:"UINT8"`
+	Uint8Ptr  *uint8   `env:"UINT8"`
+	Uint8s    []uint8  `env:"UINT8S"`
+	Uint8Ptrs []*uint8 `env:"UINT8S"`
+
+	Uint16     uint16    `env:"UINT16"`
+	Uint16Ptr  *uint16   `env:"UINT16"`
+	Uint16s    []uint16  `env:"UINT16S"`
+	Uint16Ptrs []*uint16 `env:"UINT16S"`
+
+	Uint32     uint32    `env:"UINT32"`
+	Uint32Ptr  *uint32   `env:"UINT32"`
+	Uint32s    []uint32  `env:"UINT32S"`
+	Uint32Ptrs []*uint32 `env:"UINT32S"`
+
+	Uint64     uint64    `env:"UINT64"`
+	Uint64Ptr  *uint64   `env:"UINT64"`
+	Uint64s    []uint64  `env:"UINT64S"`
+	Uint64Ptrs []*uint64 `env:"UINT64S"`
+
+	Float32     float32    `env:"FLOAT32"`
+	Float32Ptr  *float32   `env:"FLOAT32"`
+	Float32s    []float32  `env:"FLOAT32S"`
+	Float32Ptrs []*float32 `env:"FLOAT32S"`
+
+	Float64     float64    `env:"FLOAT64"`
+	Float64Ptr  *float64   `env:"FLOAT64"`
+	Float64s    []float64  `env:"FLOAT64S"`
+	Float64Ptrs []*float64 `env:"FLOAT64S"`
+
+	Duration     time.Duration    `env:"DURATION"`
+	Durations    []time.Duration  `env:"DURATIONS"`
+	DurationPtr  *time.Duration   `env:"DURATION"`
+	DurationPtrs []*time.Duration `env:"DURATIONS"`
+
+	Unmarshaler     unmarshaler    `env:"UNMARSHALER"`
+	UnmarshalerPtr  *unmarshaler   `env:"UNMARSHALER"`
+	Unmarshalers    []unmarshaler  `env:"UNMARSHALERS"`
+	UnmarshalerPtrs []*unmarshaler `env:"UNMARSHALERS"`
+
+	URL     url.URL    `env:"URL"`
+	URLPtr  *url.URL   `env:"URL"`
+	URLs    []url.URL  `env:"URLS"`
+	URLPtrs []*url.URL `env:"URLS"`
+
+	StringWithdefault string `env:"DATABASE_URL" envDefault:"postgres://localhost:5432/db"`
+
+	CustomSeparator []string `env:"SEPSTRINGS" envSeparator:":"`
+
+	NonDefined struct {
+		String string `env:"NONDEFINED_STR"`
+	}
+
+	NotAnEnv   string
+	unexported string `env:"FOO"`
+}
+
+type ParentStruct struct {
+	InnerStruct *InnerStruct
+	unexported  *InnerStruct
+	Ignored     *http.Client
+}
+
+type InnerStruct struct {
+	Inner  string `env:"innervar"`
+	Number uint   `env:"innernum"`
+}
+
+type ForNestedStruct struct {
+	NestedStruct
+}
+type NestedStruct struct {
+	NestedVar string `env:"nestedvar"`
+}
+
+func TestParsesEnv(t *testing.T) {
+	defer os.Clearenv()
+
+	var tos = func(v interface{}) string {
+		return fmt.Sprintf("%v", v)
+	}
+
+	var toss = func(v ...interface{}) string {
+		var ss = []string{}
+		for _, s := range v {
+			ss = append(ss, tos(s))
+		}
+		return strings.Join(ss, ",")
+	}
+
+	var str1 = "str1"
+	var str2 = "str2"
+	os.Setenv("STRING", str1)
+	os.Setenv("STRINGS", toss(str1, str2))
+
+	var bool1 = true
+	var bool2 = false
+	os.Setenv("BOOL", tos(bool1))
+	os.Setenv("BOOLS", toss(bool1, bool2))
+
+	var int1 = -1
+	var int2 = 2
+	os.Setenv("INT", tos(int1))
+	os.Setenv("INTS", toss(int1, int2))
+
+	var int81 int8 = -2
+	var int82 int8 = 5
+	os.Setenv("INT8", tos(int81))
+	os.Setenv("INT8S", toss(int81, int82))
+
+	var int161 int16 = -24
+	var int162 int16 = 15
+	os.Setenv("INT16", tos(int161))
+	os.Setenv("INT16S", toss(int161, int162))
+
+	var int321 int32 = -14
+	var int322 int32 = 154
+	os.Setenv("INT32", tos(int321))
+	os.Setenv("INT32S", toss(int321, int322))
+
+	var int641 int64 = -12
+	var int642 int64 = 150
+	os.Setenv("INT64", tos(int641))
+	os.Setenv("INT64S", toss(int641, int642))
+
+	var uint1 uint = 1
+	var uint2 uint = 2
+	os.Setenv("UINT", tos(uint1))
+	os.Setenv("UINTS", toss(uint1, uint2))
+
+	var uint81 uint8 = 15
+	var uint82 uint8 = 51
+	os.Setenv("UINT8", tos(uint81))
+	os.Setenv("UINT8S", toss(uint81, uint82))
+
+	var uint161 uint16 = 532
+	var uint162 uint16 = 123
+	os.Setenv("UINT16", tos(uint161))
+	os.Setenv("UINT16S", toss(uint161, uint162))
+
+	var uint321 uint32 = 93
+	var uint322 uint32 = 14
+	os.Setenv("UINT32", tos(uint321))
+	os.Setenv("UINT32S", toss(uint321, uint322))
+
+	var uint641 uint64 = 5
+	var uint642 uint64 = 43
+	os.Setenv("UINT64", tos(uint641))
+	os.Setenv("UINT64S", toss(uint641, uint642))
+
+	var float321 float32 = 9.3
+	var float322 float32 = 1.1
+	os.Setenv("FLOAT32", tos(float321))
+	os.Setenv("FLOAT32S", toss(float321, float322))
+
+	var float641 = 1.53
+	var float642 = 0.5
+	os.Setenv("FLOAT64", tos(float641))
+	os.Setenv("FLOAT64S", toss(float641, float642))
+
+	var duration1 = time.Second
+	var duration2 = time.Second * 4
+	os.Setenv("DURATION", tos(duration1))
+	os.Setenv("DURATIONS", toss(duration1, duration2))
+
+	var unmarshaler1 = unmarshaler{time.Minute}
+	var unmarshaler2 = unmarshaler{time.Millisecond * 1232}
+	os.Setenv("UNMARSHALER", tos(unmarshaler1.Duration))
+	os.Setenv("UNMARSHALERS", toss(unmarshaler1.Duration, unmarshaler2.Duration))
+
+	var url1 = "https://goreleaser.com"
+	var url2 = "https://caarlos0.dev"
+	os.Setenv("URL", tos(url1))
+	os.Setenv("URLS", toss(url1, url2))
+
+	os.Setenv("SEPSTRINGS", strings.Join([]string{str1, str2}, ":"))
+
+	nonDefinedStr := "nonDefinedStr"
+	os.Setenv("NONDEFINED_STR", nonDefinedStr)
+
+	var cfg = Config{}
+	require.NoError(t, Parse(&cfg))
+
+	assert.Equal(t, str1, cfg.String)
+	assert.Equal(t, &str1, cfg.StringPtr)
+	assert.Equal(t, str1, cfg.Strings[0])
+	assert.Equal(t, str2, cfg.Strings[1])
+	assert.Equal(t, &str1, cfg.StringPtrs[0])
+	assert.Equal(t, &str2, cfg.StringPtrs[1])
+
+	assert.Equal(t, bool1, cfg.Bool)
+	assert.Equal(t, &bool1, cfg.BoolPtr)
+	assert.Equal(t, bool1, cfg.Bools[0])
+	assert.Equal(t, bool2, cfg.Bools[1])
+	assert.Equal(t, &bool1, cfg.BoolPtrs[0])
+	assert.Equal(t, &bool2, cfg.BoolPtrs[1])
+
+	assert.Equal(t, int1, cfg.Int)
+	assert.Equal(t, &int1, cfg.IntPtr)
+	assert.Equal(t, int1, cfg.Ints[0])
+	assert.Equal(t, int2, cfg.Ints[1])
+	assert.Equal(t, &int1, cfg.IntPtrs[0])
+	assert.Equal(t, &int2, cfg.IntPtrs[1])
+
+	assert.Equal(t, int81, cfg.Int8)
+	assert.Equal(t, &int81, cfg.Int8Ptr)
+	assert.Equal(t, int81, cfg.Int8s[0])
+	assert.Equal(t, int82, cfg.Int8s[1])
+	assert.Equal(t, &int81, cfg.Int8Ptrs[0])
+	assert.Equal(t, &int82, cfg.Int8Ptrs[1])
+
+	assert.Equal(t, int161, cfg.Int16)
+	assert.Equal(t, &int161, cfg.Int16Ptr)
+	assert.Equal(t, int161, cfg.Int16s[0])
+	assert.Equal(t, int162, cfg.Int16s[1])
+	assert.Equal(t, &int161, cfg.Int16Ptrs[0])
+	assert.Equal(t, &int162, cfg.Int16Ptrs[1])
+
+	assert.Equal(t, int321, cfg.Int32)
+	assert.Equal(t, &int321, cfg.Int32Ptr)
+	assert.Equal(t, int321, cfg.Int32s[0])
+	assert.Equal(t, int322, cfg.Int32s[1])
+	assert.Equal(t, &int321, cfg.Int32Ptrs[0])
+	assert.Equal(t, &int322, cfg.Int32Ptrs[1])
+
+	assert.Equal(t, int641, cfg.Int64)
+	assert.Equal(t, &int641, cfg.Int64Ptr)
+	assert.Equal(t, int641, cfg.Int64s[0])
+	assert.Equal(t, int642, cfg.Int64s[1])
+	assert.Equal(t, &int641, cfg.Int64Ptrs[0])
+	assert.Equal(t, &int642, cfg.Int64Ptrs[1])
+
+	assert.Equal(t, uint1, cfg.Uint)
+	assert.Equal(t, &uint1, cfg.UintPtr)
+	assert.Equal(t, uint1, cfg.Uints[0])
+	assert.Equal(t, uint2, cfg.Uints[1])
+	assert.Equal(t, &uint1, cfg.UintPtrs[0])
+	assert.Equal(t, &uint2, cfg.UintPtrs[1])
+
+	assert.Equal(t, uint81, cfg.Uint8)
+	assert.Equal(t, &uint81, cfg.Uint8Ptr)
+	assert.Equal(t, uint81, cfg.Uint8s[0])
+	assert.Equal(t, uint82, cfg.Uint8s[1])
+	assert.Equal(t, &uint81, cfg.Uint8Ptrs[0])
+	assert.Equal(t, &uint82, cfg.Uint8Ptrs[1])
+
+	assert.Equal(t, uint161, cfg.Uint16)
+	assert.Equal(t, &uint161, cfg.Uint16Ptr)
+	assert.Equal(t, uint161, cfg.Uint16s[0])
+	assert.Equal(t, uint162, cfg.Uint16s[1])
+	assert.Equal(t, &uint161, cfg.Uint16Ptrs[0])
+	assert.Equal(t, &uint162, cfg.Uint16Ptrs[1])
+
+	assert.Equal(t, uint321, cfg.Uint32)
+	assert.Equal(t, &uint321, cfg.Uint32Ptr)
+	assert.Equal(t, uint321, cfg.Uint32s[0])
+	assert.Equal(t, uint322, cfg.Uint32s[1])
+	assert.Equal(t, &uint321, cfg.Uint32Ptrs[0])
+	assert.Equal(t, &uint322, cfg.Uint32Ptrs[1])
+
+	assert.Equal(t, uint641, cfg.Uint64)
+	assert.Equal(t, &uint641, cfg.Uint64Ptr)
+	assert.Equal(t, uint641, cfg.Uint64s[0])
+	assert.Equal(t, uint642, cfg.Uint64s[1])
+	assert.Equal(t, &uint641, cfg.Uint64Ptrs[0])
+	assert.Equal(t, &uint642, cfg.Uint64Ptrs[1])
+
+	assert.Equal(t, float321, cfg.Float32)
+	assert.Equal(t, &float321, cfg.Float32Ptr)
+	assert.Equal(t, float321, cfg.Float32s[0])
+	assert.Equal(t, float322, cfg.Float32s[1])
+	assert.Equal(t, &float321, cfg.Float32Ptrs[0])
+	assert.Equal(t, &float322, cfg.Float32Ptrs[1])
+
+	assert.Equal(t, float641, cfg.Float64)
+	assert.Equal(t, &float641, cfg.Float64Ptr)
+	assert.Equal(t, float641, cfg.Float64s[0])
+	assert.Equal(t, float642, cfg.Float64s[1])
+	assert.Equal(t, &float641, cfg.Float64Ptrs[0])
+	assert.Equal(t, &float642, cfg.Float64Ptrs[1])
+
+	assert.Equal(t, duration1, cfg.Duration)
+	assert.Equal(t, &duration1, cfg.DurationPtr)
+	assert.Equal(t, duration1, cfg.Durations[0])
+	assert.Equal(t, duration2, cfg.Durations[1])
+	assert.Equal(t, &duration1, cfg.DurationPtrs[0])
+	assert.Equal(t, &duration2, cfg.DurationPtrs[1])
+
+	assert.Equal(t, unmarshaler1, cfg.Unmarshaler)
+	assert.Equal(t, &unmarshaler1, cfg.UnmarshalerPtr)
+	assert.Equal(t, unmarshaler1, cfg.Unmarshalers[0])
+	assert.Equal(t, unmarshaler2, cfg.Unmarshalers[1])
+	assert.Equal(t, &unmarshaler1, cfg.UnmarshalerPtrs[0])
+	assert.Equal(t, &unmarshaler2, cfg.UnmarshalerPtrs[1])
+
+	assert.Equal(t, url1, cfg.URL.String())
+	assert.Equal(t, url1, cfg.URLPtr.String())
+	assert.Equal(t, url1, cfg.URLs[0].String())
+	assert.Equal(t, url2, cfg.URLs[1].String())
+	assert.Equal(t, url1, cfg.URLPtrs[0].String())
+	assert.Equal(t, url2, cfg.URLPtrs[1].String())
+
+	assert.Equal(t, "postgres://localhost:5432/db", cfg.StringWithdefault)
+	assert.Equal(t, nonDefinedStr, cfg.NonDefined.String)
+
+	assert.Equal(t, str1, cfg.CustomSeparator[0])
+	assert.Equal(t, str2, cfg.CustomSeparator[1])
+
+	assert.Empty(t, cfg.NotAnEnv)
+
+	assert.Empty(t, cfg.unexported)
+}
+
+func TestSetEnvAndTagOptsChain(t *testing.T) {
+	defer os.Clearenv()
+	type config struct {
+		Key1 string `mytag:"KEY1,required"`
+		Key2 int    `mytag:"KEY2,required"`
+	}
+	envs := map[string]string{
+		"KEY1": "VALUE1",
+		"KEY2": "3",
+	}
+
+	cfg := config{}
+	require.NoError(t, Parse(&cfg, Options{TagName: "mytag"}, Options{Environment: envs}))
+	assert.Equal(t, "VALUE1", cfg.Key1)
+	assert.Equal(t, 3, cfg.Key2)
+}
+
+func TestJSONTag(t *testing.T) {
+	defer os.Clearenv()
+	type config struct {
+		Key1 string `json:"KEY1"`
+		Key2 int    `json:"KEY2"`
+	}
+
+	os.Setenv("KEY1", "VALUE7")
+	os.Setenv("KEY2", "5")
+
+	cfg := config{}
+	require.NoError(t, Parse(&cfg, Options{TagName: "json"}))
+	assert.Equal(t, "VALUE7", cfg.Key1)
+	assert.Equal(t, 5, cfg.Key2)
+}
+
+func TestParsesEnvInner(t *testing.T) {
+	os.Setenv("innervar", "someinnervalue")
+	os.Setenv("innernum", "8")
+	defer os.Clearenv()
+	cfg := ParentStruct{
+		InnerStruct: &InnerStruct{},
+		unexported:  &InnerStruct{},
+	}
+	assert.NoError(t, Parse(&cfg))
+	assert.Equal(t, "someinnervalue", cfg.InnerStruct.Inner)
+	assert.Equal(t, uint(8), cfg.InnerStruct.Number)
+}
+
+func TestParsesEnvInnerFails(t *testing.T) {
+	defer os.Clearenv()
+	type config struct {
+		Foo struct {
+			Number int `env:"NUMBER"`
+		}
+	}
+	os.Setenv("NUMBER", "not-a-number")
+	var cfg = config{}
+	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Number\" of type \"int\": strconv.ParseInt: parsing \"not-a-number\": invalid syntax")
+}
+
+func TestParsesEnvInnerNil(t *testing.T) {
+	os.Setenv("innervar", "someinnervalue")
+	defer os.Clearenv()
+	cfg := ParentStruct{}
+	assert.NoError(t, Parse(&cfg))
+}
+
+func TestParsesEnvInnerInvalid(t *testing.T) {
+	os.Setenv("innernum", "-547")
+	defer os.Clearenv()
+	cfg := ParentStruct{
+		InnerStruct: &InnerStruct{},
+	}
+	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Number\" of type \"uint\": strconv.ParseUint: parsing \"-547\": invalid syntax")
+}
+
+func TestParsesEnvNested(t *testing.T) {
+	os.Setenv("nestedvar", "somenestedvalue")
+	defer os.Clearenv()
+	var cfg ForNestedStruct
+	assert.NoError(t, Parse(&cfg))
+	assert.Equal(t, "somenestedvalue", cfg.NestedVar)
+}
+
+func TestEmptyVars(t *testing.T) {
 	os.Clearenv()
+	cfg := Config{}
+	assert.NoError(t, Parse(&cfg))
+	assert.Equal(t, "", cfg.String)
+	assert.Equal(t, false, cfg.Bool)
+	assert.Equal(t, 0, cfg.Int)
+	assert.Equal(t, uint(0), cfg.Uint)
+	assert.Equal(t, uint64(0), cfg.Uint64)
+	assert.Equal(t, int64(0), cfg.Int64)
+	assert.Equal(t, 0, len(cfg.Strings))
+	assert.Equal(t, 0, len(cfg.CustomSeparator))
+	assert.Equal(t, 0, len(cfg.Ints))
+	assert.Equal(t, 0, len(cfg.Bools))
+}
 
-	for k, v := range presets {
-		os.Setenv(k, v)
+func TestPassAnInvalidPtr(t *testing.T) {
+	var thisShouldBreak int
+	assert.EqualError(t, Parse(&thisShouldBreak), "env: expected a pointer to a Struct")
+}
+
+func TestPassReference(t *testing.T) {
+	cfg := Config{}
+	assert.EqualError(t, Parse(cfg), "env: expected a pointer to a Struct")
+}
+
+func TestInvalidBool(t *testing.T) {
+	os.Setenv("BOOL", "should-be-a-bool")
+	defer os.Clearenv()
+
+	cfg := Config{}
+	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Bool\" of type \"bool\": strconv.ParseBool: parsing \"should-be-a-bool\": invalid syntax")
+}
+
+func TestInvalidInt(t *testing.T) {
+	os.Setenv("INT", "should-be-an-int")
+	defer os.Clearenv()
+
+	cfg := Config{}
+	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Int\" of type \"int\": strconv.ParseInt: parsing \"should-be-an-int\": invalid syntax")
+}
+
+func TestInvalidUint(t *testing.T) {
+	os.Setenv("UINT", "-44")
+	defer os.Clearenv()
+
+	cfg := Config{}
+	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Uint\" of type \"uint\": strconv.ParseUint: parsing \"-44\": invalid syntax")
+}
+
+func TestInvalidFloat32(t *testing.T) {
+	os.Setenv("FLOAT32", "AAA")
+	defer os.Clearenv()
+
+	cfg := Config{}
+	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Float32\" of type \"float32\": strconv.ParseFloat: parsing \"AAA\": invalid syntax")
+}
+
+func TestInvalidFloat64(t *testing.T) {
+	os.Setenv("FLOAT64", "AAA")
+	defer os.Clearenv()
+
+	cfg := Config{}
+	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Float64\" of type \"float64\": strconv.ParseFloat: parsing \"AAA\": invalid syntax")
+}
+
+func TestInvalidUint64(t *testing.T) {
+	os.Setenv("UINT64", "AAA")
+	defer os.Clearenv()
+
+	cfg := Config{}
+	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Uint64\" of type \"uint64\": strconv.ParseUint: parsing \"AAA\": invalid syntax")
+}
+
+func TestInvalidInt64(t *testing.T) {
+	os.Setenv("INT64", "AAA")
+	defer os.Clearenv()
+
+	cfg := Config{}
+	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Int64\" of type \"int64\": strconv.ParseInt: parsing \"AAA\": invalid syntax")
+}
+
+func TestInvalidInt64Slice(t *testing.T) {
+	type config struct {
+		BadFloats []int64 `env:"BADINTS"`
 	}
 
-	err := loader(envFileName)
-	if err != nil {
-		t.Fatalf("Error loading %v", envFileName)
+	os.Setenv("BADINTS", "A,2,3")
+	cfg := &config{}
+	assert.EqualError(t, Parse(cfg), "env: parse error on field \"BadFloats\" of type \"[]int64\": strconv.ParseInt: parsing \"A\": invalid syntax")
+}
+
+func TestInvalidUInt64Slice(t *testing.T) {
+	type config struct {
+		BadFloats []uint64 `env:"BADINTS"`
 	}
 
-	for k := range expectedValues {
-		envValue := os.Getenv(k)
-		v := expectedValues[k]
-		if envValue != v {
-			t.Errorf("Mismatch for key '%v': expected '%v' got '%v'", k, v, envValue)
+	os.Setenv("BADFLOATS", "A,2,3")
+	cfg := &config{}
+	assert.EqualError(t, Parse(cfg), "env: parse error on field \"BadFloats\" of type \"[]uint64\": strconv.ParseUint: parsing \"A\": invalid syntax")
+}
+
+func TestInvalidFloat32Slice(t *testing.T) {
+	type config struct {
+		BadFloats []float32 `env:"BADFLOATS"`
+	}
+
+	os.Setenv("BADFLOATS", "A,2.0,3.0")
+	cfg := &config{}
+	assert.EqualError(t, Parse(cfg), "env: parse error on field \"BadFloats\" of type \"[]float32\": strconv.ParseFloat: parsing \"A\": invalid syntax")
+}
+
+func TestInvalidFloat64Slice(t *testing.T) {
+	type config struct {
+		BadFloats []float64 `env:"BADFLOATS"`
+	}
+
+	os.Setenv("BADFLOATS", "A,2.0,3.0")
+	cfg := &config{}
+	assert.EqualError(t, Parse(cfg), "env: parse error on field \"BadFloats\" of type \"[]float64\": strconv.ParseFloat: parsing \"A\": invalid syntax")
+}
+
+func TestInvalidBoolsSlice(t *testing.T) {
+	type config struct {
+		BadBools []bool `env:"BADBOOLS"`
+	}
+
+	os.Setenv("BADBOOLS", "t,f,TRUE,faaaalse")
+	cfg := &config{}
+	assert.EqualError(t, Parse(cfg), "env: parse error on field \"BadBools\" of type \"[]bool\": strconv.ParseBool: parsing \"faaaalse\": invalid syntax")
+}
+
+func TestInvalidDuration(t *testing.T) {
+	os.Setenv("DURATION", "should-be-a-valid-duration")
+	defer os.Clearenv()
+
+	cfg := Config{}
+	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Duration\" of type \"time.Duration\": unable to parse duration: time: invalid duration \"should-be-a-valid-duration\"")
+}
+
+func TestInvalidDurations(t *testing.T) {
+	os.Setenv("DURATIONS", "1s,contains-an-invalid-duration,3s")
+	defer os.Clearenv()
+
+	cfg := Config{}
+	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Durations\" of type \"[]time.Duration\": unable to parse duration: time: invalid duration \"contains-an-invalid-duration\"")
+}
+
+func TestParseStructWithoutEnvTag(t *testing.T) {
+	cfg := Config{}
+	assert.NoError(t, Parse(&cfg))
+	assert.Empty(t, cfg.NotAnEnv)
+}
+
+func TestParseStructWithInvalidFieldKind(t *testing.T) {
+	type config struct {
+		WontWorkByte byte `env:"BLAH"`
+	}
+	os.Setenv("BLAH", "a")
+	cfg := config{}
+	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"WontWorkByte\" of type \"uint8\": strconv.ParseUint: parsing \"a\": invalid syntax")
+}
+
+func TestUnsupportedSliceType(t *testing.T) {
+	type config struct {
+		WontWork []map[int]int `env:"WONTWORK"`
+	}
+
+	os.Setenv("WONTWORK", "1,2,3")
+	defer os.Clearenv()
+
+	cfg := &config{}
+	assert.EqualError(t, Parse(cfg), "env: no parser found for field \"WontWork\" of type \"[]map[int]int\"")
+}
+
+func TestBadSeparator(t *testing.T) {
+	type config struct {
+		WontWork []int `env:"WONTWORK" envSeparator:":"`
+	}
+
+	cfg := &config{}
+	os.Setenv("WONTWORK", "1,2,3,4")
+	defer os.Clearenv()
+
+	assert.EqualError(t, Parse(cfg), "env: parse error on field \"WontWork\" of type \"[]int\": strconv.ParseInt: parsing \"1,2,3,4\": invalid syntax")
+}
+
+func TestNoErrorRequiredSet(t *testing.T) {
+	type config struct {
+		IsRequired string `env:"IS_REQUIRED,required"`
+	}
+
+	cfg := &config{}
+
+	os.Setenv("IS_REQUIRED", "true")
+	defer os.Clearenv()
+	assert.NoError(t, Parse(cfg))
+	assert.Equal(t, "true", cfg.IsRequired)
+}
+
+func TestErrorRequiredSetWithEmptyValue(t *testing.T) {
+	type config struct {
+		IsRequired string `env:"IS_REQUIRED,required"`
+	}
+
+	cfg := &config{}
+
+	os.Setenv("IS_REQUIRED", "")
+	defer os.Clearenv()
+	assert.EqualError(t, Parse(cfg), "env: required environment variable \"IS_REQUIRED\" is not set")
+}
+
+func TestErrorRequiredWithDefault(t *testing.T) {
+	type config struct {
+		IsRequired string `env:"IS_REQUIRED,required" envDefault:"important"`
+	}
+
+	cfg := &config{}
+
+	os.Setenv("IS_REQUIRED", "")
+	defer os.Clearenv()
+	assert.EqualError(t, Parse(cfg), "env: required environment variable \"IS_REQUIRED\" is not set")
+}
+
+func TestErrorRequiredNotSet(t *testing.T) {
+	type config struct {
+		IsRequired string `env:"IS_REQUIRED,required"`
+	}
+
+	cfg := &config{}
+	assert.EqualError(t, Parse(cfg), "env: required environment variable \"IS_REQUIRED\" is not set")
+}
+
+func TestErrorRequiredNotSetWithDefault(t *testing.T) {
+	type config struct {
+		IsRequired string `env:"IS_REQUIRED,required" envDefault:"important"`
+	}
+
+	cfg := &config{}
+
+	assert.NoError(t, Parse(cfg))
+	assert.Equal(t, "important", cfg.IsRequired)
+}
+
+func TestParseExpandOption(t *testing.T) {
+	type config struct {
+		Host        string `env:"HOST" envDefault:"localhost"`
+		Port        int    `env:"PORT" envDefault:"3000" envExpand:"True"`
+		SecretKey   string `env:"SECRET_KEY" envExpand:"True"`
+		ExpandKey   string `env:"EXPAND_KEY"`
+		CompoundKey string `env:"HOST_PORT" envDefault:"${HOST}:${PORT}" envExpand:"True"`
+		Default     string `env:"DEFAULT" envDefault:"def1"  envExpand:"True"`
+	}
+	defer os.Clearenv()
+
+	os.Setenv("HOST", "localhost")
+	os.Setenv("PORT", "3000")
+	os.Setenv("EXPAND_KEY", "qwerty12345")
+	os.Setenv("SECRET_KEY", "${EXPAND_KEY}")
+
+	cfg := config{}
+	err := Parse(&cfg)
+
+	assert.NoError(t, err)
+	assert.Equal(t, "localhost", cfg.Host)
+	assert.Equal(t, 3000, cfg.Port)
+	assert.Equal(t, "qwerty12345", cfg.SecretKey)
+	assert.Equal(t, "qwerty12345", cfg.ExpandKey)
+	assert.Equal(t, "localhost:3000", cfg.CompoundKey)
+	assert.Equal(t, "def1", cfg.Default)
+}
+
+func TestCustomParser(t *testing.T) {
+	type foo struct {
+		name string
+	}
+
+	type bar struct {
+		Name string `env:"OTHER"`
+		Foo  *foo   `env:"BLAH"`
+	}
+
+	type config struct {
+		Var   foo  `env:"VAR"`
+		Foo   *foo `env:"BLAH"`
+		Other *bar
+	}
+
+	os.Setenv("VAR", "test")
+	defer os.Unsetenv("VAR")
+	os.Setenv("OTHER", "test2")
+	defer os.Unsetenv("OTHER")
+	os.Setenv("BLAH", "test3")
+	defer os.Unsetenv("BLAH")
+
+	cfg := &config{
+		Other: &bar{},
+	}
+	err := ParseWithFuncs(cfg, map[reflect.Type]ParserFunc{
+		reflect.TypeOf(foo{}): func(v string) (interface{}, error) {
+			return foo{name: v}, nil
+		},
+	})
+
+	assert.NoError(t, err)
+	assert.Equal(t, cfg.Var.name, "test")
+	assert.Equal(t, cfg.Foo.name, "test3")
+	assert.Equal(t, cfg.Other.Name, "test2")
+	assert.Equal(t, cfg.Other.Foo.name, "test3")
+}
+
+func TestParseWithFuncsNoPtr(t *testing.T) {
+	type foo struct{}
+	err := ParseWithFuncs(foo{}, nil)
+	assert.EqualError(t, err, "env: expected a pointer to a Struct")
+}
+
+func TestParseWithFuncsInvalidType(t *testing.T) {
+	var c int
+	err := ParseWithFuncs(&c, nil)
+	assert.EqualError(t, err, "env: expected a pointer to a Struct")
+}
+
+func TestCustomParserError(t *testing.T) {
+	type foo struct {
+		name string
+	}
+
+	customParserFunc := func(v string) (interface{}, error) {
+		return nil, errors.New("something broke")
+	}
+
+	t.Run("single", func(t *testing.T) {
+		type config struct {
+			Var foo `env:"VAR"`
 		}
-	}
-}
 
-func TestLoadWithNoArgsLoadsDotEnv(t *testing.T) {
-	err := Load()
-	pathError := err.(*os.PathError)
-	if pathError == nil || pathError.Op != "open" || pathError.Path != ".env" {
-		t.Errorf("Didn't try and open .env by default")
-	}
-}
-
-func TestOverloadWithNoArgsOverloadsDotEnv(t *testing.T) {
-	err := Overload()
-	pathError := err.(*os.PathError)
-	if pathError == nil || pathError.Op != "open" || pathError.Path != ".env" {
-		t.Errorf("Didn't try and open .env by default")
-	}
-}
-
-func TestLoadFileNotFound(t *testing.T) {
-	err := Load("somefilethatwillneverexistever.env")
-	if err == nil {
-		t.Error("File wasn't found but Load didn't return an error")
-	}
-}
-
-func TestOverloadFileNotFound(t *testing.T) {
-	err := Overload("somefilethatwillneverexistever.env")
-	if err == nil {
-		t.Error("File wasn't found but Overload didn't return an error")
-	}
-}
-
-func TestReadPlainEnv(t *testing.T) {
-	envFileName := "fixtures/plain.env"
-	expectedValues := map[string]string{
-		"OPTION_A": "1",
-		"OPTION_B": "2",
-		"OPTION_C": "3",
-		"OPTION_D": "4",
-		"OPTION_E": "5",
-		"OPTION_F": "",
-		"OPTION_G": "",
-	}
-
-	envMap, err := Read(envFileName)
-	if err != nil {
-		t.Error("Error reading file")
-	}
-
-	if len(envMap) != len(expectedValues) {
-		t.Error("Didn't get the right size map back")
-	}
-
-	for key, value := range expectedValues {
-		if envMap[key] != value {
-			t.Error("Read got one of the keys wrong")
-		}
-	}
-}
-
-func TestParse(t *testing.T) {
-	envMap, err := Parse(bytes.NewReader([]byte("ONE=1\nTWO='2'\nTHREE = \"3\"")))
-	expectedValues := map[string]string{
-		"ONE":   "1",
-		"TWO":   "2",
-		"THREE": "3",
-	}
-	if err != nil {
-		t.Fatalf("error parsing env: %v", err)
-	}
-	for key, value := range expectedValues {
-		if envMap[key] != value {
-			t.Errorf("expected %s to be %s, got %s", key, value, envMap[key])
-		}
-	}
-}
-
-func TestLoadDoesNotOverride(t *testing.T) {
-	envFileName := "fixtures/plain.env"
-
-	// ensure NO overload
-	presets := map[string]string{
-		"OPTION_A": "do_not_override",
-		"OPTION_B": "",
-	}
-
-	expectedValues := map[string]string{
-		"OPTION_A": "do_not_override",
-		"OPTION_B": "",
-	}
-	loadEnvAndCompareValues(t, Load, envFileName, expectedValues, presets)
-}
-
-func TestOveroadDoesOverride(t *testing.T) {
-	envFileName := "fixtures/plain.env"
-
-	// ensure NO overload
-	presets := map[string]string{
-		"OPTION_A": "do_not_override",
-	}
-
-	expectedValues := map[string]string{
-		"OPTION_A": "1",
-	}
-	loadEnvAndCompareValues(t, Overload, envFileName, expectedValues, presets)
-}
-
-func TestLoadPlainEnv(t *testing.T) {
-	envFileName := "fixtures/plain.env"
-	expectedValues := map[string]string{
-		"OPTION_A": "1",
-		"OPTION_B": "2",
-		"OPTION_C": "3",
-		"OPTION_D": "4",
-		"OPTION_E": "5",
-	}
-
-	loadEnvAndCompareValues(t, Load, envFileName, expectedValues, noopPresets)
-}
-
-func TestLoadExportedEnv(t *testing.T) {
-	envFileName := "fixtures/exported.env"
-	expectedValues := map[string]string{
-		"OPTION_A": "2",
-		"OPTION_B": "\\n",
-	}
-
-	loadEnvAndCompareValues(t, Load, envFileName, expectedValues, noopPresets)
-}
-
-func TestLoadEqualsEnv(t *testing.T) {
-	envFileName := "fixtures/equals.env"
-	expectedValues := map[string]string{
-		"OPTION_A": "postgres://localhost:5432/database?sslmode=disable",
-	}
-
-	loadEnvAndCompareValues(t, Load, envFileName, expectedValues, noopPresets)
-}
-
-func TestLoadQuotedEnv(t *testing.T) {
-	envFileName := "fixtures/quoted.env"
-	expectedValues := map[string]string{
-		"OPTION_A": "1",
-		"OPTION_B": "2",
-		"OPTION_C": "",
-		"OPTION_D": "\\n",
-		"OPTION_E": "1",
-		"OPTION_F": "2",
-		"OPTION_G": "",
-		"OPTION_H": "\n",
-		"OPTION_I": "echo 'asd'",
-	}
-
-	loadEnvAndCompareValues(t, Load, envFileName, expectedValues, noopPresets)
-}
-
-func TestSubstitutions(t *testing.T) {
-	envFileName := "fixtures/substitutions.env"
-	expectedValues := map[string]string{
-		"OPTION_A": "1",
-		"OPTION_B": "1",
-		"OPTION_C": "1",
-		"OPTION_D": "11",
-		"OPTION_E": "",
-	}
-
-	loadEnvAndCompareValues(t, Load, envFileName, expectedValues, noopPresets)
-}
-
-func TestExpanding(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected map[string]string
-	}{
-		{
-			"expands variables found in values",
-			"FOO=test\nBAR=$FOO",
-			map[string]string{"FOO": "test", "BAR": "test"},
-		},
-		{
-			"parses variables wrapped in brackets",
-			"FOO=test\nBAR=${FOO}bar",
-			map[string]string{"FOO": "test", "BAR": "testbar"},
-		},
-		{
-			"expands undefined variables to an empty string",
-			"BAR=$FOO",
-			map[string]string{"BAR": ""},
-		},
-		{
-			"expands variables in double quoted strings",
-			"FOO=test\nBAR=\"quote $FOO\"",
-			map[string]string{"FOO": "test", "BAR": "quote test"},
-		},
-		{
-			"does not expand variables in single quoted strings",
-			"BAR='quote $FOO'",
-			map[string]string{"BAR": "quote $FOO"},
-		},
-		{
-			"does not expand escaped variables",
-			`FOO="foo\$BAR"`,
-			map[string]string{"FOO": "foo$BAR"},
-		},
-		{
-			"does not expand escaped variables",
-			`FOO="foo\${BAR}"`,
-			map[string]string{"FOO": "foo${BAR}"},
-		},
-		{
-			"does not expand escaped variables",
-			"FOO=test\nBAR=\"foo\\${FOO} ${FOO}\"",
-			map[string]string{"FOO": "test", "BAR": "foo${FOO} test"},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			env, err := Parse(strings.NewReader(tt.input))
-			if err != nil {
-				t.Errorf("Error: %s", err.Error())
-			}
-			for k, v := range tt.expected {
-				if strings.Compare(env[k], v) != 0 {
-					t.Errorf("Expected: %s, Actual: %s", v, env[k])
-				}
-			}
+		os.Setenv("VAR", "single")
+		cfg := &config{}
+		err := ParseWithFuncs(cfg, map[reflect.Type]ParserFunc{
+			reflect.TypeOf(foo{}): customParserFunc,
 		})
-	}
 
-}
+		assert.Empty(t, cfg.Var.name)
+		assert.EqualError(t, err, "env: parse error on field \"Var\" of type \"env.foo\": something broke")
+	})
 
-func TestActualEnvVarsAreLeftAlone(t *testing.T) {
-	os.Clearenv()
-	os.Setenv("OPTION_A", "actualenv")
-	_ = Load("fixtures/plain.env")
-
-	if os.Getenv("OPTION_A") != "actualenv" {
-		t.Error("An ENV var set earlier was overwritten")
-	}
-}
-
-func TestParsing(t *testing.T) {
-	// unquoted values
-	parseAndCompare(t, "FOO=bar", "FOO", "bar")
-
-	// parses values with spaces around equal sign
-	parseAndCompare(t, "FOO =bar", "FOO", "bar")
-	parseAndCompare(t, "FOO= bar", "FOO", "bar")
-
-	// parses double quoted values
-	parseAndCompare(t, `FOO="bar"`, "FOO", "bar")
-
-	// parses single quoted values
-	parseAndCompare(t, "FOO='bar'", "FOO", "bar")
-
-	// parses escaped double quotes
-	parseAndCompare(t, `FOO="escaped\"bar"`, "FOO", `escaped"bar`)
-
-	// parses single quotes inside double quotes
-	parseAndCompare(t, `FOO="'d'"`, "FOO", `'d'`)
-
-	// parses yaml style options
-	parseAndCompare(t, "OPTION_A: 1", "OPTION_A", "1")
-
-	//parses yaml values with equal signs
-	parseAndCompare(t, "OPTION_A: Foo=bar", "OPTION_A", "Foo=bar")
-
-	// parses non-yaml options with colons
-	parseAndCompare(t, "OPTION_A=1:B", "OPTION_A", "1:B")
-
-	// parses export keyword
-	parseAndCompare(t, "export OPTION_A=2", "OPTION_A", "2")
-	parseAndCompare(t, `export OPTION_B='\n'`, "OPTION_B", "\\n")
-	parseAndCompare(t, "export exportFoo=2", "exportFoo", "2")
-	parseAndCompare(t, "exportFOO=2", "exportFOO", "2")
-	parseAndCompare(t, "export_FOO =2", "export_FOO", "2")
-	parseAndCompare(t, "export.FOO= 2", "export.FOO", "2")
-	parseAndCompare(t, "export\tOPTION_A=2", "OPTION_A", "2")
-	parseAndCompare(t, "  export OPTION_A=2", "OPTION_A", "2")
-	parseAndCompare(t, "\texport OPTION_A=2", "OPTION_A", "2")
-
-	// it 'expands newlines in quoted strings' do
-	// expect(env('FOO="bar\nbaz"')).to eql('FOO' => "bar\nbaz")
-	parseAndCompare(t, `FOO="bar\nbaz"`, "FOO", "bar\nbaz")
-
-	// it 'parses varibales with "." in the name' do
-	// expect(env('FOO.BAR=foobar')).to eql('FOO.BAR' => 'foobar')
-	parseAndCompare(t, "FOO.BAR=foobar", "FOO.BAR", "foobar")
-
-	// it 'parses varibales with several "=" in the value' do
-	// expect(env('FOO=foobar=')).to eql('FOO' => 'foobar=')
-	parseAndCompare(t, "FOO=foobar=", "FOO", "foobar=")
-
-	// it 'strips unquoted values' do
-	// expect(env('foo=bar ')).to eql('foo' => 'bar') # not 'bar '
-	parseAndCompare(t, "FOO=bar ", "FOO", "bar")
-
-	// it 'ignores inline comments' do
-	// expect(env("foo=bar # this is foo")).to eql('foo' => 'bar')
-	parseAndCompare(t, "FOO=bar # this is foo", "FOO", "bar")
-
-	// it 'allows # in quoted value' do
-	// expect(env('foo="bar#baz" # comment')).to eql('foo' => 'bar#baz')
-	parseAndCompare(t, `FOO="bar#baz" # comment`, "FOO", "bar#baz")
-	parseAndCompare(t, "FOO='bar#baz' # comment", "FOO", "bar#baz")
-	parseAndCompare(t, `FOO="bar#baz#bang" # comment`, "FOO", "bar#baz#bang")
-
-	// it 'parses # in quoted values' do
-	// expect(env('foo="ba#r"')).to eql('foo' => 'ba#r')
-	// expect(env("foo='ba#r'")).to eql('foo' => 'ba#r')
-	parseAndCompare(t, `FOO="ba#r"`, "FOO", "ba#r")
-	parseAndCompare(t, "FOO='ba#r'", "FOO", "ba#r")
-
-	//newlines and backslashes should be escaped
-	parseAndCompare(t, `FOO="bar\n\ b\az"`, "FOO", "bar\n baz")
-	parseAndCompare(t, `FOO="bar\\\n\ b\az"`, "FOO", "bar\\\n baz")
-	parseAndCompare(t, `FOO="bar\\r\ b\az"`, "FOO", "bar\\r baz")
-
-	parseAndCompare(t, `="value"`, "", "value")
-	parseAndCompare(t, `KEY="`, "KEY", "\"")
-	parseAndCompare(t, `KEY="value`, "KEY", "\"value")
-
-	// leading whitespace should be ignored
-	parseAndCompare(t, " KEY =value", "KEY", "value")
-	parseAndCompare(t, "   KEY=value", "KEY", "value")
-	parseAndCompare(t, "\tKEY=value", "KEY", "value")
-
-	// it 'throws an error if line format is incorrect' do
-	// expect{env('lol$wut')}.to raise_error(Dotenv::FormatError)
-	badlyFormattedLine := "lol$wut"
-	_, _, err := parseLine(badlyFormattedLine, noopPresets)
-	if err == nil {
-		t.Errorf("Expected \"%v\" to return error, but it didn't", badlyFormattedLine)
-	}
-}
-
-func TestLinesToIgnore(t *testing.T) {
-	// it 'ignores empty lines' do
-	// expect(env("\n \t  \nfoo=bar\n \nfizz=buzz")).to eql('foo' => 'bar', 'fizz' => 'buzz')
-	if !isIgnoredLine("\n") {
-		t.Error("Line with nothing but line break wasn't ignored")
-	}
-
-	if !isIgnoredLine("\r\n") {
-		t.Error("Line with nothing but windows-style line break wasn't ignored")
-	}
-
-	if !isIgnoredLine("\t\t ") {
-		t.Error("Line full of whitespace wasn't ignored")
-	}
-
-	// it 'ignores comment lines' do
-	// expect(env("\n\n\n # HERE GOES FOO \nfoo=bar")).to eql('foo' => 'bar')
-	if !isIgnoredLine("# comment") {
-		t.Error("Comment wasn't ignored")
-	}
-
-	if !isIgnoredLine("\t#comment") {
-		t.Error("Indented comment wasn't ignored")
-	}
-
-	// make sure we're not getting false positives
-	if isIgnoredLine(`export OPTION_B='\n'`) {
-		t.Error("ignoring a perfectly valid line to parse")
-	}
-}
-
-func TestErrorReadDirectory(t *testing.T) {
-	envFileName := "fixtures/"
-	envMap, err := Read(envFileName)
-
-	if err == nil {
-		t.Errorf("Expected error, got %v", envMap)
-	}
-}
-
-func TestErrorParsing(t *testing.T) {
-	envFileName := "fixtures/invalid1.env"
-	envMap, err := Read(envFileName)
-	if err == nil {
-		t.Errorf("Expected error, got %v", envMap)
-	}
-}
-
-func TestWrite(t *testing.T) {
-	writeAndCompare := func(env string, expected string) {
-		envMap, _ := Unmarshal(env)
-		actual, _ := Marshal(envMap)
-		if expected != actual {
-			t.Errorf("Expected '%v' (%v) to write as '%v', got '%v' instead.", env, envMap, expected, actual)
+	t.Run("slice", func(t *testing.T) {
+		type config struct {
+			Var []foo `env:"VAR2"`
 		}
-	}
-	//just test some single lines to show the general idea
-	//TestRoundtrip makes most of the good assertions
+		os.Setenv("VAR2", "slice,slace")
 
-	//values are always double-quoted
-	writeAndCompare(`key=value`, `key="value"`)
-	//double-quotes are escaped
-	writeAndCompare(`key=va"lu"e`, `key="va\"lu\"e"`)
-	//but single quotes are left alone
-	writeAndCompare(`key=va'lu'e`, `key="va'lu'e"`)
-	// newlines, backslashes, and some other special chars are escaped
-	writeAndCompare(`foo="\n\r\\r!"`, `foo="\n\r\\r\!"`)
-	// lines should be sorted
-	writeAndCompare("foo=bar\nbaz=buzz", "baz=\"buzz\"\nfoo=\"bar\"")
+		cfg := &config{}
+		err := ParseWithFuncs(cfg, map[reflect.Type]ParserFunc{
+			reflect.TypeOf(foo{}): customParserFunc,
+		})
 
+		assert.Empty(t, cfg.Var)
+		assert.EqualError(t, err, "env: parse error on field \"Var\" of type \"[]env.foo\": something broke")
+	})
 }
 
-func TestRoundtrip(t *testing.T) {
-	fixtures := []string{"equals.env", "exported.env", "plain.env", "quoted.env"}
-	for _, fixture := range fixtures {
-		fixtureFilename := fmt.Sprintf("fixtures/%s", fixture)
-		env, err := readFile(fixtureFilename)
+func TestCustomParserBasicType(t *testing.T) {
+	type ConstT int32
+
+	type config struct {
+		Const ConstT `env:"CONST_"`
+	}
+
+	exp := ConstT(123)
+	os.Setenv("CONST_", fmt.Sprintf("%d", exp))
+
+	customParserFunc := func(v string) (interface{}, error) {
+		i, err := strconv.Atoi(v)
 		if err != nil {
-			t.Errorf("Expected '%s' to read without error (%v)", fixtureFilename, err)
+			return nil, err
 		}
-		rep, err := Marshal(env)
-		if err != nil {
-			t.Errorf("Expected '%s' to Marshal (%v)", fixtureFilename, err)
-		}
-		roundtripped, err := Unmarshal(rep)
-		if err != nil {
-			t.Errorf("Expected '%s' to Mashal and Unmarshal (%v)", fixtureFilename, err)
-		}
-		if !reflect.DeepEqual(env, roundtripped) {
-			t.Errorf("Expected '%s' to roundtrip as '%v', got '%v' instead", fixtureFilename, env, roundtripped)
-		}
-
+		r := ConstT(i)
+		return r, nil
 	}
+
+	cfg := &config{}
+	err := ParseWithFuncs(cfg, map[reflect.Type]ParserFunc{
+		reflect.TypeOf(ConstT(0)): customParserFunc,
+	})
+
+	assert.NoError(t, err)
+	assert.Equal(t, exp, cfg.Const)
+}
+
+func TestCustomParserUint64Alias(t *testing.T) {
+	type T uint64
+
+	var one T = 1
+
+	type config struct {
+		Val T `env:"" envDefault:"1x"`
+	}
+
+	parserCalled := false
+
+	tParser := func(value string) (interface{}, error) {
+		parserCalled = true
+		trimmed := strings.TrimSuffix(value, "x")
+		i, err := strconv.Atoi(trimmed)
+		if err != nil {
+			return nil, err
+		}
+		return T(i), nil
+	}
+
+	cfg := config{}
+
+	err := ParseWithFuncs(&cfg, map[reflect.Type]ParserFunc{
+		reflect.TypeOf(one): tParser,
+	})
+
+	assert.True(t, parserCalled, "tParser should have been called")
+	assert.NoError(t, err)
+	assert.Equal(t, T(1), cfg.Val)
+}
+
+func TestTypeCustomParserBasicInvalid(t *testing.T) {
+	type ConstT int32
+
+	type config struct {
+		Const ConstT `env:"CONST_"`
+	}
+
+	os.Setenv("CONST_", "foobar")
+
+	customParserFunc := func(_ string) (interface{}, error) {
+		return nil, errors.New("random error")
+	}
+
+	cfg := &config{}
+	err := ParseWithFuncs(cfg, map[reflect.Type]ParserFunc{
+		reflect.TypeOf(ConstT(0)): customParserFunc,
+	})
+
+	assert.Empty(t, cfg.Const)
+	assert.EqualError(t, err, "env: parse error on field \"Const\" of type \"env.ConstT\": random error")
+}
+
+func TestCustomParserNotCalledForNonAlias(t *testing.T) {
+	type T uint64
+	type U uint64
+
+	type config struct {
+		Val   uint64 `env:"" envDefault:"33"`
+		Other U      `env:"OTHER" envDefault:"44"`
+	}
+
+	tParserCalled := false
+
+	tParser := func(value string) (interface{}, error) {
+		tParserCalled = true
+		return T(99), nil
+	}
+
+	cfg := config{}
+
+	err := ParseWithFuncs(&cfg, map[reflect.Type]ParserFunc{
+		reflect.TypeOf(T(0)): tParser,
+	})
+
+	assert.False(t, tParserCalled, "tParser should not have been called")
+	assert.NoError(t, err)
+	assert.Equal(t, uint64(33), cfg.Val)
+	assert.Equal(t, U(44), cfg.Other)
+}
+
+func TestCustomParserBasicUnsupported(t *testing.T) {
+	type ConstT struct {
+		A int
+	}
+
+	type config struct {
+		Const ConstT `env:"CONST_"`
+	}
+
+	os.Setenv("CONST_", "42")
+
+	cfg := &config{}
+	err := Parse(cfg)
+
+	assert.Zero(t, cfg.Const)
+	assert.EqualError(t, err, "env: no parser found for field \"Const\" of type \"env.ConstT\"")
+}
+
+func TestUnsupportedStructType(t *testing.T) {
+	type config struct {
+		Foo http.Client `env:"FOO"`
+	}
+
+	os.Setenv("FOO", "foo")
+
+	cfg := &config{}
+	err := Parse(cfg)
+
+	assert.EqualError(t, err, "env: no parser found for field \"Foo\" of type \"http.Client\"")
+}
+
+func TestEmptyOption(t *testing.T) {
+	type config struct {
+		Var string `env:"VAR,"`
+	}
+
+	cfg := &config{}
+
+	os.Setenv("VAR", "")
+	defer os.Clearenv()
+	assert.NoError(t, Parse(cfg))
+	assert.Equal(t, "", cfg.Var)
+}
+
+func TestErrorOptionNotRecognized(t *testing.T) {
+	type config struct {
+		Var string `env:"VAR,not_supported!"`
+	}
+
+	cfg := &config{}
+	assert.EqualError(t, Parse(cfg), "env: tag option \"not_supported!\" not supported")
+}
+
+func TestTextUnmarshalerError(t *testing.T) {
+	type config struct {
+		Unmarshaler unmarshaler `env:"UNMARSHALER"`
+	}
+	os.Setenv("UNMARSHALER", "invalid")
+	cfg := &config{}
+	assert.EqualError(t, Parse(cfg), "env: parse error on field \"Unmarshaler\" of type \"env.unmarshaler\": time: invalid duration \"invalid\"")
+}
+
+func TestTextUnmarshalersError(t *testing.T) {
+	type config struct {
+		Unmarshalers []unmarshaler `env:"UNMARSHALERS"`
+	}
+	os.Setenv("UNMARSHALERS", "1s,invalid")
+	cfg := &config{}
+	assert.EqualError(t, Parse(cfg), "env: parse error on field \"Unmarshalers\" of type \"[]env.unmarshaler\": time: invalid duration \"invalid\"")
+}
+
+func TestParseURL(t *testing.T) {
+	type config struct {
+		ExampleURL url.URL `env:"EXAMPLE_URL" envDefault:"https://google.com"`
+	}
+	var cfg config
+	assert.NoError(t, Parse(&cfg))
+	assert.Equal(t, "https://google.com", cfg.ExampleURL.String())
+}
+
+func TestParseInvalidURL(t *testing.T) {
+	type config struct {
+		ExampleURL url.URL `env:"EXAMPLE_URL_2"`
+	}
+	var cfg config
+	os.Setenv("EXAMPLE_URL_2", "nope://s s/")
+	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"ExampleURL\" of type \"url.URL\": unable to parse URL: parse \"nope://s s/\": invalid character \" \" in host name")
+}
+
+func ExampleParse() {
+	type inner struct {
+		Foo string `env:"FOO" envDefault:"foobar"`
+	}
+	type config struct {
+		Home         string `env:"HOME,required"`
+		Port         int    `env:"PORT" envDefault:"3000"`
+		IsProduction bool   `env:"PRODUCTION"`
+		Inner        inner
+	}
+	os.Setenv("HOME", "/tmp/fakehome")
+	var cfg config
+	if err := Parse(&cfg); err != nil {
+		fmt.Println("failed:", err)
+	}
+	fmt.Printf("%+v", cfg)
+	// Output: {Home:/tmp/fakehome Port:3000 IsProduction:false Inner:{Foo:foobar}}
+}
+
+func TestIgnoresUnexported(t *testing.T) {
+	type unexportedConfig struct {
+		home  string `env:"HOME"`
+		Home2 string `env:"HOME"`
+	}
+	cfg := unexportedConfig{}
+
+	os.Setenv("HOME", "/tmp/fakehome")
+	assert.NoError(t, Parse(&cfg))
+	assert.Empty(t, cfg.home)
+	assert.Equal(t, "/tmp/fakehome", cfg.Home2)
+}
+
+type LogLevel int8
+
+func (l *LogLevel) UnmarshalText(text []byte) error {
+	txt := string(text)
+	switch txt {
+	case "debug":
+		*l = DebugLevel
+	case "info":
+		*l = InfoLevel
+	default:
+		return fmt.Errorf("unknown level: %q", txt)
+	}
+
+	return nil
+}
+
+const (
+	DebugLevel LogLevel = iota - 1
+	InfoLevel
+)
+
+func TestPrecedenceUnmarshalText(t *testing.T) {
+	os.Setenv("LOG_LEVEL", "debug")
+	os.Setenv("LOG_LEVELS", "debug,info")
+	defer os.Unsetenv("LOG_LEVEL")
+	defer os.Unsetenv("LOG_LEVELS")
+
+	type config struct {
+		LogLevel  LogLevel   `env:"LOG_LEVEL"`
+		LogLevels []LogLevel `env:"LOG_LEVELS"`
+	}
+	var cfg config
+
+	assert.NoError(t, Parse(&cfg))
+	assert.Equal(t, DebugLevel, cfg.LogLevel)
+	assert.Equal(t, []LogLevel{DebugLevel, InfoLevel}, cfg.LogLevels)
+}
+
+func ExampleParseWithFuncs() {
+	type thing struct {
+		desc string
+	}
+
+	type conf struct {
+		Thing thing `env:"THING"`
+	}
+
+	os.Setenv("THING", "my thing")
+
+	var c = conf{}
+
+	err := ParseWithFuncs(&c, map[reflect.Type]ParserFunc{
+		reflect.TypeOf(thing{}): func(v string) (interface{}, error) {
+			return thing{desc: v}, nil
+		},
+	})
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(c.Thing.desc)
+	// Output:
+	// my thing
+}
+
+func TestFile(t *testing.T) {
+	type config struct {
+		SecretKey string `env:"SECRET_KEY,file"`
+	}
+
+	file, err := ioutil.TempFile("", "sec_key_*")
+	assert.NoError(t, err)
+	err = ioutil.WriteFile(file.Name(), []byte("secret"), 0660)
+	assert.NoError(t, err)
+	defer func() {
+		err = os.Remove(file.Name())
+		assert.NoError(t, err)
+	}()
+
+	defer os.Clearenv()
+	os.Setenv("SECRET_KEY", file.Name())
+
+	cfg := config{}
+	err = Parse(&cfg)
+
+	assert.NoError(t, err)
+	assert.Equal(t, "secret", cfg.SecretKey)
+
+}
+
+func TestFileNoParam(t *testing.T) {
+	type config struct {
+		SecretKey string `env:"SECRET_KEY,file"`
+	}
+	defer os.Clearenv()
+	cfg := config{}
+	err := Parse(&cfg)
+
+	assert.NoError(t, err)
+}
+
+func TestFileNoParamRequired(t *testing.T) {
+	type config struct {
+		SecretKey string `env:"SECRET_KEY,file,required"`
+	}
+	defer os.Clearenv()
+	cfg := config{}
+	err := Parse(&cfg)
+
+	assert.Error(t, err)
+	assert.EqualError(t, err, "env: required environment variable \"SECRET_KEY\" is not set")
+}
+
+func TestFileBadFile(t *testing.T) {
+	type config struct {
+		SecretKey string `env:"SECRET_KEY,file"`
+	}
+
+	file, err := ioutil.TempFile("", "sec_key_*")
+	assert.NoError(t, err)
+	err = ioutil.WriteFile(file.Name(), []byte("secret"), 0660)
+	assert.NoError(t, err)
+
+	filename := file.Name()
+	defer os.Clearenv()
+	os.Setenv("SECRET_KEY", filename)
+
+	err = os.Remove(filename)
+	assert.NoError(t, err)
+
+	cfg := config{}
+	err = Parse(&cfg)
+
+	assert.Error(t, err)
+	assert.EqualError(t, err, fmt.Sprintf(`env: could not load content of file "%s" from variable SECRET_KEY: open %s: no such file or directory`, filename, filename))
+}
+
+func TestFileWithDefault(t *testing.T) {
+	type config struct {
+		SecretKey string `env:"SECRET_KEY,file" envDefault:"${FILE}" envExpand:"true"`
+	}
+	defer os.Clearenv()
+
+	file, err := ioutil.TempFile("", "sec_key_*")
+	assert.NoError(t, err)
+	err = ioutil.WriteFile(file.Name(), []byte("secret"), 0660)
+	assert.NoError(t, err)
+	defer func() {
+		err = os.Remove(file.Name())
+		assert.NoError(t, err)
+	}()
+
+	defer os.Clearenv()
+	os.Setenv("FILE", file.Name())
+
+	cfg := config{}
+
+	err = Parse(&cfg)
+
+	assert.NoError(t, err)
+	assert.Equal(t, "secret", cfg.SecretKey)
+
+}
+
+func TestCustomSliceType(t *testing.T) {
+	type customslice []byte
+
+	type config struct {
+		SecretKey customslice `env:"SECRET_KEY"`
+	}
+
+	parsecustomsclice := func(value string) (interface{}, error) {
+		return customslice(value), nil
+	}
+
+	defer os.Clearenv()
+	os.Setenv("SECRET_KEY", "somesecretkey")
+
+	var cfg config
+	err := ParseWithFuncs(&cfg, map[reflect.Type]ParserFunc{reflect.TypeOf(customslice{}): parsecustomsclice})
+	assert.NoError(t, err)
 }

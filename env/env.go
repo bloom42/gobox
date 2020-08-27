@@ -1,358 +1,448 @@
-// Package env is a go port of the ruby dotenv library (https://github.com/bkeepers/dotenv)
-//
-// Examples/readme can be found on the github page at https://github.com/joho/env
-//
-// The TL;DR is that you make a .env file that looks something like
-//
-// 		SOME_ENV_VAR=somevalue
-//
-// and then in your go code you can call
-//
-// 		env.Load()
-//
-// and all the env vars declared in .env will be available through os.Getenv("SOME_ENV_VAR")
 package env
 
 import (
-	"bufio"
+	"encoding"
 	"errors"
 	"fmt"
-	"io"
+	"io/ioutil"
+	"net/mail"
+	"net/url"
 	"os"
-	"os/exec"
-	"regexp"
-	"sort"
+	"reflect"
+	"strconv"
 	"strings"
+	"time"
 )
 
-const doubleQuoteSpecialChars = "\\\n\r\"!$`"
+// nolint: gochecknoglobals
+var (
+	// ErrNotAStructPtr is returned if you pass something that is not a pointer to a
+	// Struct to Parse
+	ErrNotAStructPtr = errors.New("env: expected a pointer to a Struct")
 
-// Load will read your env file(s) and load them into ENV for this process.
-//
-// Call this function as close as possible to the start of your program (ideally in main)
-//
-// If you call Load without any args it will default to loading .env in the current path
-//
-// You can otherwise tell it which files to load (there can be more than one) like
-//
-//		env.Load("fileone", "filetwo")
-//
-// It's important to note that it WILL NOT OVERRIDE an env variable that already exists - consider the .env file to set dev vars or sensible defaults
-func Load(filenames ...string) (err error) {
-	filenames = filenamesOrDefault(filenames)
-
-	for _, filename := range filenames {
-		err = loadFile(filename, false)
-		if err != nil {
-			return // return early on a spazout
-		}
-	}
-	return
-}
-
-// Overload will read your env file(s) and load them into ENV for this process.
-//
-// Call this function as close as possible to the start of your program (ideally in main)
-//
-// If you call Overload without any args it will default to loading .env in the current path
-//
-// You can otherwise tell it which files to load (there can be more than one) like
-//
-//		env.Overload("fileone", "filetwo")
-//
-// It's important to note this WILL OVERRIDE an env variable that already exists - consider the .env file to forcefilly set all vars.
-func Overload(filenames ...string) (err error) {
-	filenames = filenamesOrDefault(filenames)
-
-	for _, filename := range filenames {
-		err = loadFile(filename, true)
-		if err != nil {
-			return // return early on a spazout
-		}
-	}
-	return
-}
-
-// Read all env (with same file loading semantics as Load) but return values as
-// a map rather than automatically writing values into env
-func Read(filenames ...string) (envMap map[string]string, err error) {
-	filenames = filenamesOrDefault(filenames)
-	envMap = make(map[string]string)
-
-	for _, filename := range filenames {
-		individualEnvMap, individualErr := readFile(filename)
-
-		if individualErr != nil {
-			err = individualErr
-			return // return early on a spazout
-		}
-
-		for key, value := range individualEnvMap {
-			envMap[key] = value
-		}
+	defaultBuiltInParsers = map[reflect.Kind]ParserFunc{
+		reflect.Bool: func(v string) (interface{}, error) {
+			return strconv.ParseBool(v)
+		},
+		reflect.String: func(v string) (interface{}, error) {
+			return v, nil
+		},
+		reflect.Int: func(v string) (interface{}, error) {
+			i, err := strconv.ParseInt(v, 10, 32)
+			return int(i), err
+		},
+		reflect.Int16: func(v string) (interface{}, error) {
+			i, err := strconv.ParseInt(v, 10, 16)
+			return int16(i), err
+		},
+		reflect.Int32: func(v string) (interface{}, error) {
+			i, err := strconv.ParseInt(v, 10, 32)
+			return int32(i), err
+		},
+		reflect.Int64: func(v string) (interface{}, error) {
+			return strconv.ParseInt(v, 10, 64)
+		},
+		reflect.Int8: func(v string) (interface{}, error) {
+			i, err := strconv.ParseInt(v, 10, 8)
+			return int8(i), err
+		},
+		reflect.Uint: func(v string) (interface{}, error) {
+			i, err := strconv.ParseUint(v, 10, 32)
+			return uint(i), err
+		},
+		reflect.Uint16: func(v string) (interface{}, error) {
+			i, err := strconv.ParseUint(v, 10, 16)
+			return uint16(i), err
+		},
+		reflect.Uint32: func(v string) (interface{}, error) {
+			i, err := strconv.ParseUint(v, 10, 32)
+			return uint32(i), err
+		},
+		reflect.Uint64: func(v string) (interface{}, error) {
+			i, err := strconv.ParseUint(v, 10, 64)
+			return i, err
+		},
+		reflect.Uint8: func(v string) (interface{}, error) {
+			i, err := strconv.ParseUint(v, 10, 8)
+			return uint8(i), err
+		},
+		reflect.Float64: func(v string) (interface{}, error) {
+			return strconv.ParseFloat(v, 64)
+		},
+		reflect.Float32: func(v string) (interface{}, error) {
+			f, err := strconv.ParseFloat(v, 32)
+			return float32(f), err
+		},
 	}
 
-	return
-}
-
-// Parse reads an env file from io.Reader, returning a map of keys and values.
-func Parse(r io.Reader) (envMap map[string]string, err error) {
-	envMap = make(map[string]string)
-
-	var lines []string
-	scanner := bufio.NewScanner(r)
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
-	}
-
-	if err = scanner.Err(); err != nil {
-		return
-	}
-
-	for _, fullLine := range lines {
-		if !isIgnoredLine(fullLine) {
-			var key, value string
-			key, value, err = parseLine(fullLine, envMap)
-
+	defaultTypeParsers = map[reflect.Type]ParserFunc{
+		reflect.TypeOf(url.URL{}): func(v string) (interface{}, error) {
+			u, err := url.Parse(v)
 			if err != nil {
-				return
+				return nil, fmt.Errorf("unable to parse URL: %v", err)
 			}
-			envMap[key] = value
+			return *u, nil
+		},
+		reflect.TypeOf(time.Nanosecond): func(v string) (interface{}, error) {
+			s, err := time.ParseDuration(v)
+			if err != nil {
+				return nil, fmt.Errorf("unable to parse duration: %v", err)
+			}
+			return s, err
+		},
+		reflect.TypeOf(mail.Address{}): func(v string) (interface{}, error) {
+			a, err := mail.ParseAddress(v)
+			if err != nil {
+				return nil, fmt.Errorf("unable to parse mail Address: %v", err)
+			}
+			return a, err
+		},
+	}
+)
+
+// ParserFunc defines the signature of a function that can be used within `CustomParsers`
+type ParserFunc func(v string) (interface{}, error)
+
+// Options for the parser.
+type Options struct {
+	// Environment keys and values that will be accessible for the service.
+	Environment map[string]string
+	// TagName specifies another tagname to use rather than the default env.
+	TagName string
+
+	// Sets to true if we have already configured once.
+	configured bool
+}
+
+// configure will do the basic configurations and defaults.
+func configure(opts []Options) []Options {
+	// If we have already configured the first item
+	// of options will have been configured set to true.
+	if len(opts) > 0 && opts[0].configured {
+		return opts
+	}
+
+	// Created options with defaults.
+	opt := Options{
+		TagName:     "env",
+		Environment: toMap(os.Environ()),
+		configured:  true,
+	}
+
+	// Loop over all opts structs and set
+	// to opt if value is not default/empty.
+	for _, item := range opts {
+		if item.Environment != nil {
+			opt.Environment = item.Environment
+		}
+		if item.TagName != "" {
+			opt.TagName = item.TagName
 		}
 	}
-	return
+
+	return []Options{opt}
 }
 
-//Unmarshal reads an env file from a string, returning a map of keys and values.
-func Unmarshal(str string) (envMap map[string]string, err error) {
-	return Parse(strings.NewReader(str))
+func toMap(env []string) map[string]string {
+	r := map[string]string{}
+	for _, e := range env {
+		p := strings.SplitN(e, "=", 2)
+		r[p[0]] = p[1]
+	}
+	return r
 }
 
-// Exec loads env vars from the specified filenames (empty map falls back to default)
-// then executes the cmd specified.
-//
-// Simply hooks up os.Stdin/err/out to the command and calls Run()
-//
-// If you want more fine grained control over your command it's recommended
-// that you use `Load()` or `Read()` and the `os/exec` package yourself.
-func Exec(filenames []string, cmd string, cmdArgs []string) error {
-	Load(filenames...)
-
-	command := exec.Command(cmd, cmdArgs...)
-	command.Stdin = os.Stdin
-	command.Stdout = os.Stdout
-	command.Stderr = os.Stderr
-	return command.Run()
+// getTagName returns the tag name.
+func getTagName(opts []Options) string {
+	return opts[0].TagName
 }
 
-// Write serializes the given environment and writes it to a file
-func Write(envMap map[string]string, filename string) error {
-	content, err := Marshal(envMap)
-	if err != nil {
-		return err
-	}
-	file, err := os.Create(filename)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-	_, err = file.WriteString(content)
-	if err != nil {
-		return err
-	}
-	file.Sync()
-	return err
+// getEnvironment returns the environment map.
+func getEnvironment(opts []Options) map[string]string {
+	return opts[0].Environment
 }
 
-// Marshal outputs the given environment as a dotenv-formatted environment file.
-// Each line is in the format: KEY="VALUE" where VALUE is backslash-escaped.
-func Marshal(envMap map[string]string) (string, error) {
-	lines := make([]string, 0, len(envMap))
-	for k, v := range envMap {
-		lines = append(lines, fmt.Sprintf(`%s="%s"`, k, doubleQuoteEscape(v)))
-	}
-	sort.Strings(lines)
-	return strings.Join(lines, "\n"), nil
+// Parse parses a struct containing `env` tags and loads its values from
+// environment variables.
+func Parse(v interface{}, opts ...Options) error {
+	return ParseWithFuncs(v, map[reflect.Type]ParserFunc{}, opts...)
 }
 
-func filenamesOrDefault(filenames []string) []string {
-	if len(filenames) == 0 {
-		return []string{".env"}
+// ParseWithFuncs is the same as `Parse` except it also allows the user to pass
+// in custom parsers.
+func ParseWithFuncs(v interface{}, funcMap map[reflect.Type]ParserFunc, opts ...Options) error {
+	opts = configure(opts)
+
+	ptrRef := reflect.ValueOf(v)
+	if ptrRef.Kind() != reflect.Ptr {
+		return ErrNotAStructPtr
 	}
-	return filenames
+	ref := ptrRef.Elem()
+	if ref.Kind() != reflect.Struct {
+		return ErrNotAStructPtr
+	}
+	var parsers = defaultTypeParsers
+	for k, v := range funcMap {
+		parsers[k] = v
+	}
+
+	return doParse(ref, parsers, opts)
 }
 
-func loadFile(filename string, overload bool) error {
-	envMap, err := readFile(filename)
-	if err != nil {
-		return err
-	}
+func doParse(ref reflect.Value, funcMap map[reflect.Type]ParserFunc, opts []Options) error {
+	var refType = ref.Type()
 
-	currentEnv := map[string]bool{}
-	rawEnv := os.Environ()
-	for _, rawEnvLine := range rawEnv {
-		key := strings.Split(rawEnvLine, "=")[0]
-		currentEnv[key] = true
-	}
-
-	for key, value := range envMap {
-		if !currentEnv[key] || overload {
-			os.Setenv(key, value)
+	for i := 0; i < refType.NumField(); i++ {
+		refField := ref.Field(i)
+		if !refField.CanSet() {
+			continue
+		}
+		if reflect.Ptr == refField.Kind() && !refField.IsNil() {
+			err := ParseWithFuncs(refField.Interface(), funcMap, opts...)
+			if err != nil {
+				return err
+			}
+			continue
+		}
+		if reflect.Struct == refField.Kind() && refField.CanAddr() && refField.Type().Name() == "" {
+			err := Parse(refField.Addr().Interface(), opts...)
+			if err != nil {
+				return err
+			}
+			continue
+		}
+		refTypeField := refType.Field(i)
+		value, err := get(refTypeField, opts)
+		if err != nil {
+			return err
+		}
+		if value == "" {
+			if reflect.Struct == refField.Kind() {
+				if err := doParse(refField, funcMap, opts); err != nil {
+					return err
+				}
+			}
+			continue
+		}
+		if err := set(refField, refTypeField, value, funcMap); err != nil {
+			return err
 		}
 	}
+	return nil
+}
+
+func get(field reflect.StructField, opts []Options) (val string, err error) {
+	var required bool
+	var loadFile bool
+	var expand = strings.EqualFold(field.Tag.Get("envExpand"), "true")
+
+	key, tags := parseKeyForOption(field.Tag.Get(getTagName(opts)))
+
+	for _, tag := range tags {
+		switch tag {
+		case "":
+			break
+		case "file":
+			loadFile = true
+		case "required":
+			required = true
+		default:
+			return "", fmt.Errorf("env: tag option %q not supported", tag)
+		}
+	}
+
+	defaultValue, defExists := field.Tag.Lookup("envDefault")
+	val, _ = getOr(key, defaultValue, defExists, getEnvironment(opts))
+
+	if expand {
+		val = os.ExpandEnv(val)
+	}
+
+	if required && len(val) == 0 {
+		return "", fmt.Errorf(`env: required environment variable %q is not set`, key)
+	}
+
+	if loadFile && val != "" {
+		filename := val
+		val, err = getFromFile(filename)
+		if err != nil {
+			return "", fmt.Errorf(`env: could not load content of file "%s" from variable %s: %v`, filename, key, err)
+		}
+	}
+
+	return val, err
+}
+
+// split the env tag's key into the expected key and desired option, if any.
+func parseKeyForOption(key string) (string, []string) {
+	opts := strings.Split(key, ",")
+	return opts[0], opts[1:]
+}
+
+func getFromFile(filename string) (value string, err error) {
+	b, err := ioutil.ReadFile(filename)
+	return string(b), err
+}
+
+func getOr(key, defaultValue string, defExists bool, envs map[string]string) (value string, exists bool) {
+	value, exists = envs[key]
+	switch {
+	case !exists && defExists:
+		return defaultValue, true
+	case !exists:
+		return "", false
+	}
+
+	return value, true
+}
+
+func set(field reflect.Value, sf reflect.StructField, value string, funcMap map[reflect.Type]ParserFunc) error {
+	var tm = asTextUnmarshaler(field)
+	if tm != nil {
+		if err := tm.UnmarshalText([]byte(value)); err != nil {
+			return newParseError(sf, err)
+		}
+		return nil
+	}
+
+	var typee = sf.Type
+	var fieldee = field
+	if typee.Kind() == reflect.Ptr {
+		typee = typee.Elem()
+		fieldee = field.Elem()
+	}
+
+	parserFunc, ok := funcMap[typee]
+	if ok {
+		val, err := parserFunc(value)
+		if err != nil {
+			return newParseError(sf, err)
+		}
+
+		fieldee.Set(reflect.ValueOf(val))
+		return nil
+	}
+
+	parserFunc, ok = defaultBuiltInParsers[typee.Kind()]
+	if ok {
+		val, err := parserFunc(value)
+		if err != nil {
+			return newParseError(sf, err)
+		}
+
+		fieldee.Set(reflect.ValueOf(val).Convert(typee))
+		return nil
+	}
+
+	if field.Kind() == reflect.Slice {
+		return handleSlice(field, value, sf, funcMap)
+	}
+
+	return newNoParserError(sf)
+}
+
+func handleSlice(field reflect.Value, value string, sf reflect.StructField, funcMap map[reflect.Type]ParserFunc) error {
+	var separator = sf.Tag.Get("envSeparator")
+	if separator == "" {
+		separator = ","
+	}
+	var parts = strings.Split(value, separator)
+
+	var typee = sf.Type.Elem()
+	if typee.Kind() == reflect.Ptr {
+		typee = typee.Elem()
+	}
+
+	if _, ok := reflect.New(typee).Interface().(encoding.TextUnmarshaler); ok {
+		return parseTextUnmarshalers(field, parts, sf)
+	}
+
+	parserFunc, ok := funcMap[typee]
+	if !ok {
+		parserFunc, ok = defaultBuiltInParsers[typee.Kind()]
+		if !ok {
+			return newNoParserError(sf)
+		}
+	}
+
+	var result = reflect.MakeSlice(sf.Type, 0, len(parts))
+	for _, part := range parts {
+		r, err := parserFunc(part)
+		if err != nil {
+			return newParseError(sf, err)
+		}
+		var v = reflect.ValueOf(r).Convert(typee)
+		if sf.Type.Elem().Kind() == reflect.Ptr {
+			v = reflect.New(typee)
+			v.Elem().Set(reflect.ValueOf(r).Convert(typee))
+		}
+		result = reflect.Append(result, v)
+	}
+	field.Set(result)
+	return nil
+}
+
+func asTextUnmarshaler(field reflect.Value) encoding.TextUnmarshaler {
+	if reflect.Ptr == field.Kind() {
+		if field.IsNil() {
+			field.Set(reflect.New(field.Type().Elem()))
+		}
+	} else if field.CanAddr() {
+		field = field.Addr()
+	}
+
+	tm, ok := field.Interface().(encoding.TextUnmarshaler)
+	if !ok {
+		return nil
+	}
+	return tm
+}
+
+func parseTextUnmarshalers(field reflect.Value, data []string, sf reflect.StructField) error {
+	s := len(data)
+	elemType := field.Type().Elem()
+	slice := reflect.MakeSlice(reflect.SliceOf(elemType), s, s)
+	for i, v := range data {
+		sv := slice.Index(i)
+		kind := sv.Kind()
+		if kind == reflect.Ptr {
+			sv = reflect.New(elemType.Elem())
+		} else {
+			sv = sv.Addr()
+		}
+		tm := sv.Interface().(encoding.TextUnmarshaler)
+		if err := tm.UnmarshalText([]byte(v)); err != nil {
+			return newParseError(sf, err)
+		}
+		if kind == reflect.Ptr {
+			slice.Index(i).Set(sv)
+		}
+	}
+
+	field.Set(slice)
 
 	return nil
 }
 
-func readFile(filename string) (envMap map[string]string, err error) {
-	file, err := os.Open(filename)
-	if err != nil {
-		return
+func newParseError(sf reflect.StructField, err error) error {
+	if err == nil {
+		return nil
 	}
-	defer file.Close()
-
-	return Parse(file)
+	return parseError{
+		sf:  sf,
+		err: err,
+	}
 }
 
-var exportRegex = regexp.MustCompile(`^\s*(?:export\s+)?(.*?)\s*$`)
-
-func parseLine(line string, envMap map[string]string) (key string, value string, err error) {
-	if len(line) == 0 {
-		err = errors.New("zero length string")
-		return
-	}
-
-	// ditch the comments (but keep quoted hashes)
-	if strings.Contains(line, "#") {
-		segmentsBetweenHashes := strings.Split(line, "#")
-		quotesAreOpen := false
-		var segmentsToKeep []string
-		for _, segment := range segmentsBetweenHashes {
-			if strings.Count(segment, "\"") == 1 || strings.Count(segment, "'") == 1 {
-				if quotesAreOpen {
-					quotesAreOpen = false
-					segmentsToKeep = append(segmentsToKeep, segment)
-				} else {
-					quotesAreOpen = true
-				}
-			}
-
-			if len(segmentsToKeep) == 0 || quotesAreOpen {
-				segmentsToKeep = append(segmentsToKeep, segment)
-			}
-		}
-
-		line = strings.Join(segmentsToKeep, "#")
-	}
-
-	firstEquals := strings.Index(line, "=")
-	firstColon := strings.Index(line, ":")
-	splitString := strings.SplitN(line, "=", 2)
-	if firstColon != -1 && (firstColon < firstEquals || firstEquals == -1) {
-		//this is a yaml-style line
-		splitString = strings.SplitN(line, ":", 2)
-	}
-
-	if len(splitString) != 2 {
-		err = errors.New("Can't separate key from value")
-		return
-	}
-
-	// Parse the key
-	key = splitString[0]
-	if strings.HasPrefix(key, "export") {
-		key = strings.TrimPrefix(key, "export")
-	}
-	key = strings.TrimSpace(key)
-
-	key = exportRegex.ReplaceAllString(splitString[0], "$1")
-
-	// Parse the value
-	value = parseValue(splitString[1], envMap)
-	return
+type parseError struct {
+	sf  reflect.StructField
+	err error
 }
 
-var (
-	singleQuotesRegex  = regexp.MustCompile(`\A'(.*)'\z`)
-	doubleQuotesRegex  = regexp.MustCompile(`\A"(.*)"\z`)
-	escapeRegex        = regexp.MustCompile(`\\.`)
-	unescapeCharsRegex = regexp.MustCompile(`\\([^$])`)
-)
-
-func parseValue(value string, envMap map[string]string) string {
-
-	// trim
-	value = strings.Trim(value, " ")
-
-	// check if we've got quoted values or possible escapes
-	if len(value) > 1 {
-		singleQuotes := singleQuotesRegex.FindStringSubmatch(value)
-
-		doubleQuotes := doubleQuotesRegex.FindStringSubmatch(value)
-
-		if singleQuotes != nil || doubleQuotes != nil {
-			// pull the quotes off the edges
-			value = value[1 : len(value)-1]
-		}
-
-		if doubleQuotes != nil {
-			// expand newlines
-			value = escapeRegex.ReplaceAllStringFunc(value, func(match string) string {
-				c := strings.TrimPrefix(match, `\`)
-				switch c {
-				case "n":
-					return "\n"
-				case "r":
-					return "\r"
-				default:
-					return match
-				}
-			})
-			// unescape characters
-			value = unescapeCharsRegex.ReplaceAllString(value, "$1")
-		}
-
-		if singleQuotes == nil {
-			value = expandVariables(value, envMap)
-		}
-	}
-
-	return value
+func (e parseError) Error() string {
+	return fmt.Sprintf(`env: parse error on field "%s" of type "%s": %v`, e.sf.Name, e.sf.Type, e.err)
 }
 
-var expandVarRegex = regexp.MustCompile(`(\\)?(\$)(\()?\{?([A-Z0-9_]+)?\}?`)
-
-func expandVariables(v string, m map[string]string) string {
-	return expandVarRegex.ReplaceAllStringFunc(v, func(s string) string {
-		submatch := expandVarRegex.FindStringSubmatch(s)
-
-		if submatch == nil {
-			return s
-		}
-		if submatch[1] == "\\" || submatch[2] == "(" {
-			return submatch[0][1:]
-		} else if submatch[4] != "" {
-			return m[submatch[4]]
-		}
-		return s
-	})
-}
-
-func isIgnoredLine(line string) bool {
-	trimmedLine := strings.TrimSpace(line)
-	return len(trimmedLine) == 0 || strings.HasPrefix(trimmedLine, "#")
-}
-
-func doubleQuoteEscape(line string) string {
-	for _, c := range doubleQuoteSpecialChars {
-		toReplace := "\\" + string(c)
-		if c == '\n' {
-			toReplace = `\n`
-		}
-		if c == '\r' {
-			toReplace = `\r`
-		}
-		line = strings.Replace(line, string(c), toReplace, -1)
-	}
-	return line
+func newNoParserError(sf reflect.StructField) error {
+	return fmt.Errorf(`env: no parser found for field "%s" of type "%s"`, sf.Name, sf.Type)
 }
