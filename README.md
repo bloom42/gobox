@@ -22,4 +22,4 @@ See `LICENSE.txt` and https://bloom.sh/licensing
 `database/sqlx` is a fork of [github.com/jmoiron/sqlx](https://github.com/jmoiron/sqlx) <br>
 `cli` is a fork of [github.com/spf13/cobra](https://github.com/spf13/cobra) <br>
 `cli/pflag` is a fork of [github.com/spf13/pflag](https://github.com/spf13/pflag) <br>
-`env` is a fork of https://github.com/joho/godotenv <br>
+`env` is a fork of https://github.com/joho/godotenv and https://github.com/caarlos0/env<br>
