@@ -95,7 +95,7 @@ var (
 			if err != nil {
 				return nil, fmt.Errorf("unable to parse mail Address: %v", err)
 			}
-			return a, err
+			return *a, err
 		},
 	}
 )
