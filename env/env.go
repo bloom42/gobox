@@ -2,6 +2,7 @@ package env
 
 import (
 	"encoding"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -96,6 +97,13 @@ var (
 				return nil, fmt.Errorf("unable to parse mail Address: %v", err)
 			}
 			return *a, err
+		},
+		reflect.TypeOf([]byte("")): func(v string) (interface{}, error) {
+			a, err := base64.StdEncoding.DecodeString(v)
+			if err != nil {
+				return nil, fmt.Errorf("unable to parse []byte: %v", err)
+			}
+			return a, err
 		},
 	}
 )

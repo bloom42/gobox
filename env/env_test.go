@@ -1,6 +1,7 @@
 package env
 
 import (
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -73,10 +74,10 @@ type Config struct {
 	Uints    []uint  `env:"UINTS"`
 	UintPtrs []*uint `env:"UINTS"`
 
-	Uint8     uint8    `env:"UINT8"`
-	Uint8Ptr  *uint8   `env:"UINT8"`
-	Uint8s    []uint8  `env:"UINT8S"`
-	Uint8Ptrs []*uint8 `env:"UINT8S"`
+	Uint8    uint8   `env:"UINT8"`
+	Uint8Ptr *uint8  `env:"UINT8"`
+	Uint8s   []uint8 `env:"UINT8S"`
+	// Uint8Ptrs []*uint8 `env:"UINT8S"`
 
 	Uint16     uint16    `env:"UINT16"`
 	Uint16Ptr  *uint16   `env:"UINT16"`
@@ -204,9 +205,11 @@ func TestParsesEnv(t *testing.T) {
 	os.Setenv("UINTS", toss(uint1, uint2))
 
 	var uint81 uint8 = 15
-	var uint82 uint8 = 51
+	// var uint82 uint8 = 51
+	byteSlice := []byte("hello")
+	b64ByteSlice := base64.StdEncoding.EncodeToString(byteSlice)
 	os.Setenv("UINT8", tos(uint81))
-	os.Setenv("UINT8S", toss(uint81, uint82))
+	os.Setenv("UINT8S", b64ByteSlice)
 
 	var uint161 uint16 = 532
 	var uint162 uint16 = 123
@@ -314,10 +317,7 @@ func TestParsesEnv(t *testing.T) {
 
 	assert.Equal(t, uint81, cfg.Uint8)
 	assert.Equal(t, &uint81, cfg.Uint8Ptr)
-	assert.Equal(t, uint81, cfg.Uint8s[0])
-	assert.Equal(t, uint82, cfg.Uint8s[1])
-	assert.Equal(t, &uint81, cfg.Uint8Ptrs[0])
-	assert.Equal(t, &uint82, cfg.Uint8Ptrs[1])
+	assert.Equal(t, byteSlice, cfg.Uint8s)
 
 	assert.Equal(t, uint161, cfg.Uint16)
 	assert.Equal(t, &uint161, cfg.Uint16Ptr)
