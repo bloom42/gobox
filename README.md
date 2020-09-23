@@ -24,3 +24,4 @@ See `LICENSE.txt` and https://bloom.sh/licensing
 `cli/pflag` is a fork of [github.com/spf13/pflag](https://github.com/spf13/pflag) <br>
 `env` is a fork of https://github.com/joho/godotenv and https://github.com/caarlos0/env <br>
 `retry` is a fork of https://github.com/avast/retry-go <br>
+`vat` is a fork of https://github.com/mattes/vat <br>
