@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"gitlab.com/bloom42/gobox/log"
+	"github.com/bloom42/gobox/log"
 )
 
 // setup would normally be an init() function, however, there seems

@@ -6,7 +6,7 @@ package pkgerrors
 // 	"testing"
 
 // 	"github.com/pkg/errors"
-// 	"gitlab.com/bloom42/gobox/log"
+// 	"github.com/bloom42/gobox/log"
 // )
 
 // func TestLogStack(t *testing.T) {

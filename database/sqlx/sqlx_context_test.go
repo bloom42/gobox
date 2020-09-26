@@ -19,7 +19,7 @@ import (
 	"time"
 
 	// _ "github.com/jackc/pgx/v4/stdlib"
-	"gitlab.com/bloom42/gobox/database/sqlx/reflectx"
+	"github.com/bloom42/gobox/database/sqlx/reflectx"
 )
 
 func MultiExecContext(ctx context.Context, e ExecerContext, query string) {

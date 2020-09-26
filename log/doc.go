@@ -2,7 +2,7 @@
 //
 // A global Logger can be used for simple logging:
 //
-//     import "gitlab.com/bloom42/gobox/log"
+//     import "github.com/bloom42/gobox/log"
 //
 //     log.Info("hello world")
 //

@@ -23,7 +23,7 @@ import (
 	"strings"
 	"time"
 
-	"gitlab.com/bloom42/gobox/cli"
+	"github.com/bloom42/gobox/cli"
 )
 
 func printOptions(buf *bytes.Buffer, cmd *cli.Command, name string) error {

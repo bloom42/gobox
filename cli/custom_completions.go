@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"gitlab.com/bloom42/gobox/cli/pflag"
+	"github.com/bloom42/gobox/cli/pflag"
 )
 
 const (

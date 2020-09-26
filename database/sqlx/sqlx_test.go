@@ -19,7 +19,7 @@ import (
 	"time"
 
 	// _ "github.com/jackc/pgx/v4/stdlib"
-	"gitlab.com/bloom42/gobox/database/sqlx/reflectx"
+	"github.com/bloom42/gobox/database/sqlx/reflectx"
 )
 
 /* compile time checks that Db, Tx, Stmt (qStmt) implement expected interfaces */

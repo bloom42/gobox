@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"gitlab.com/bloom42/gobox/cli"
+	"github.com/bloom42/gobox/cli"
 )
 
 func TestGenRSTDoc(t *testing.T) {

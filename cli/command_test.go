@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"gitlab.com/bloom42/gobox/cli/pflag"
+	"github.com/bloom42/gobox/cli/pflag"
 )
 
 func emptyRun(*Command, []string) {}

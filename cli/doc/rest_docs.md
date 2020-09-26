@@ -8,7 +8,7 @@ package main
 import (
 	"log"
 
-	"gitlab.com/bloom42/gobox/cli"
+	"github.com/bloom42/gobox/cli"
 	"github.com/spf13/cobra/doc"
 )
 

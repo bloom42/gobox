@@ -5,7 +5,7 @@ import (
 	"net"
 	"time"
 
-	"gitlab.com/bloom42/gobox/uuid"
+	"github.com/bloom42/gobox/uuid"
 )
 
 // Field functions are used to add fields to events

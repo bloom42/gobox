@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"time"
 
-	"gitlab.com/bloom42/gobox/log"
-	"gitlab.com/bloom42/gobox/uuid"
+	"github.com/bloom42/gobox/log"
+	"github.com/bloom42/gobox/uuid"
 )
 
 // Key to use when setting the request ID.

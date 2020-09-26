@@ -25,7 +25,7 @@ import (
 	"sort"
 	"strings"
 
-	flag "gitlab.com/bloom42/gobox/cli/pflag"
+	flag "github.com/bloom42/gobox/cli/pflag"
 )
 
 // FParseErrWhitelist configures Flag parse errors to be ignored

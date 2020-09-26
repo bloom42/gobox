@@ -21,7 +21,7 @@ import (
 	"strconv"
 	"unicode"
 
-	"gitlab.com/bloom42/gobox/database/sqlx/reflectx"
+	"github.com/bloom42/gobox/database/sqlx/reflectx"
 )
 
 // NamedStmt is a prepared statement that executes named queries.  Prepare it

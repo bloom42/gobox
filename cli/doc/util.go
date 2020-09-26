@@ -16,7 +16,7 @@ package doc
 import (
 	"strings"
 
-	"gitlab.com/bloom42/gobox/cli"
+	"github.com/bloom42/gobox/cli"
 )
 
 // Test to see if we have a reason to print See Also information in docs

@@ -1,6 +1,6 @@
 package log_test
 
-import "gitlab.com/bloom42/gobox/log"
+import "github.com/bloom42/gobox/log"
 
 func ExampleNew() {
 	log := log.New(log.SetFields(log.Timestamp(false)))

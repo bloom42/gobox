@@ -811,7 +811,7 @@ func TestMustBe(t *testing.T) {
 				t.Error("expected panic with *reflect.ValueError")
 				return
 			}
-			if valueErr.Method != "gitlab.com/bloom42/gobox/database/sqlx/reflectx.TestMustBe" {
+			if valueErr.Method != "github.com/bloom42/gobox/database/sqlx/reflectx.TestMustBe" {
 			}
 			if valueErr.Kind != reflect.String {
 				t.Errorf("unexpected Kind: %s", valueErr.Kind)

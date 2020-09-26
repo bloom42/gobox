@@ -4,7 +4,7 @@ package log
 // JSON encoded byte stream.
 
 import (
-	"gitlab.com/bloom42/gobox/log/internal/json"
+	"github.com/bloom42/gobox/log/internal/json"
 )
 
 var (

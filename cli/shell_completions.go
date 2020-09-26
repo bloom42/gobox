@@ -1,7 +1,7 @@
 package cli
 
 import (
-	"gitlab.com/bloom42/gobox/cli/pflag"
+	"github.com/bloom42/gobox/cli/pflag"
 )
 
 // MarkFlagRequired adds the BashCompOneRequiredFlag annotation to the named flag if it exists,

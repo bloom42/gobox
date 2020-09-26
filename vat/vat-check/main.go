@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"gitlab.com/bloom42/gobox/vat"
+	"github.com/bloom42/gobox/vat"
 )
 
 func main() {

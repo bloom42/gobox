@@ -9,7 +9,7 @@ import (
 	"log"
 
 	"github.com/spf13/cobra"
-"gitlab.com/bloom42/gobox/cli/doc"
+"github.com/bloom42/gobox/cli/doc"
 )
 
 func main() {

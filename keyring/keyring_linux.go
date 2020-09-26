@@ -3,8 +3,8 @@ package keyring
 import (
 	"fmt"
 
+	ss "github.com/bloom42/gobox/keyring/secretservice"
 	"github.com/godbus/dbus"
-	ss "gitlab.com/bloom42/gobox/keyring/secretservice"
 )
 
 type secretServiceProvider struct{}

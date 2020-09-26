@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"gitlab.com/bloom42/gobox/is"
+	"github.com/bloom42/gobox/is"
 )
 
 func TestDoJSON(t *testing.T) {

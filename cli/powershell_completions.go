@@ -13,7 +13,7 @@ import (
 	"os"
 	"strings"
 
-	"gitlab.com/bloom42/gobox/cli/pflag"
+	"github.com/bloom42/gobox/cli/pflag"
 )
 
 var powerShellCompletionTemplate = `using namespace System.Management.Automation

@@ -12,7 +12,7 @@ import (
 	"strings"
 	"sync"
 
-	"gitlab.com/bloom42/gobox/database/sqlx/reflectx"
+	"github.com/bloom42/gobox/database/sqlx/reflectx"
 )
 
 // Although the NameMapper is convenient, in practice it should not

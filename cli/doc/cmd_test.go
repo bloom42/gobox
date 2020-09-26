@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"gitlab.com/bloom42/gobox/cli"
+	"github.com/bloom42/gobox/cli"
 )
 
 func emptyRun(*cli.Command, []string) {}

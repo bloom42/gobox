@@ -16,7 +16,7 @@ import (
 	"strings"
 	"time"
 
-	"gitlab.com/bloom42/gobox/crypto"
+	"github.com/bloom42/gobox/crypto"
 )
 
 const (

@@ -7,7 +7,7 @@ package pflag_test
 import (
 	"fmt"
 
-	"gitlab.com/bloom42/gobox/cli/pflag"
+	"github.com/bloom42/gobox/cli/pflag"
 )
 
 func ExampleShorthandLookup() {

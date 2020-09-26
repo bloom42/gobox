@@ -2,7 +2,7 @@
 
 The missing pieces of Go's standard library
 
-[![GoDoc](https://godoc.org/gitlab.com/bloom42/gobox?status.svg)](https://pkg.go.dev/gitlab.com/bloom42/gobox)
+[![GoDoc](https://godoc.org/github.com/bloom42/gobox?status.svg)](https://pkg.go.dev/github.com/bloom42/gobox)
 
 ---------------------------------------------
 

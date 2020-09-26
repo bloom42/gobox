@@ -1,4 +1,4 @@
-module gitlab.com/bloom42/gobox
+module github.com/bloom42/gobox
 
 go 1.13
 

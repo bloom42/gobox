@@ -9,7 +9,7 @@ import (
 	"strings"
 	"text/template"
 
-	"gitlab.com/bloom42/gobox/cli/pflag"
+	"github.com/bloom42/gobox/cli/pflag"
 )
 
 const (
