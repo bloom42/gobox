@@ -16,7 +16,7 @@ jobs:
 
       - name: Install system dependencies
         run: |
-              sudo apt update && sudo apt install -y dbus-x11 gnome-keyring libsecret-1-0 python-keyring secretstorage
+              sudo apt update && sudo apt install -y dbus-x11 gnome-keyring libsecret-1-0 python-keyring
               sudo dbus-run-session -- sh
               echo password | sudo gnome-keyring-daemon --unlock
               #sudo dbus-launch /usr/bin/python -c "import keyring;keyring.set_password('default', 'login', 'password');"
