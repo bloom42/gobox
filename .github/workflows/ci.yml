@@ -16,7 +16,7 @@ jobs:
 
       - name: Install system dependencies
         run: |
-              apt update && apt install -y dbus-x11 gnome-keyring libsecret-1-0 python-gnomekeyring
+              sudo apt update && sudo apt install -y dbus-x11 gnome-keyring libsecret-1-0 python-gnomekeyring
               dbus-launch /usr/bin/python -c "import gnomekeyring;gnomekeyring.create_sync('login', '');"
 
       - name: Go test
