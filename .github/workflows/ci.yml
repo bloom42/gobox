@@ -17,7 +17,7 @@ jobs:
       - name: Install system dependencies
         run: |
               sudo apt update && sudo apt install -y dbus-x11 gnome-keyring libsecret-1-0 python-keyring
-              dbus-launch /usr/bin/python -c "import keyring;keyring.set_password('login', '');"
+              dbus-launch /usr/bin/python -c "import keyring;keyring.set_password('system', 'login', '');"
 
       - name: Go test
         run: make test
