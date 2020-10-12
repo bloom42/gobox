@@ -1,4 +1,4 @@
-package govalidator
+package validator
 
 // Benchmark testing is produced with randomly filled array of 1 million elements
 

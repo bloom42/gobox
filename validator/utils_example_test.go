@@ -1,4 +1,4 @@
-package govalidator
+package validator
 
 func ExampleTrim() {
 	// Remove from left and right spaces and "\r", "\n", "\t" characters

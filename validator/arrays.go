@@ -1,4 +1,4 @@
-package govalidator
+package validator
 
 // Iterator is the function that accepts element of slice/array and its index
 type Iterator func(interface{}, int)

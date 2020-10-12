@@ -1,4 +1,4 @@
-package govalidator
+package validator
 
 func ExampleAbs() {
 	_ = Abs(-123.3e1) // 123.3e1
