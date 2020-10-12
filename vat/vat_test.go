@@ -23,8 +23,8 @@ func TestCheck(t *testing.T) {
 	if r.Name != "GOOGLE IRELAND LIMITED" {
 		t.Error("Wrong name")
 	}
-	if r.Address != "3RD FLOOR ,GORDON HOUSE ,BARROW STREET ,DUBLIN 4" {
-		t.Error("Wrong address")
+	if r.Address != "3RD FLOOR, GORDON HOUSE, BARROW STREET, DUBLIN 4" {
+		t.Errorf("Wrong address: %s", r.Address)
 	}
 }
 

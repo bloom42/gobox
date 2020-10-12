@@ -25,3 +25,4 @@ See `LICENSE.txt` and https://bloom.sh/licensing
 `env` is a fork of https://github.com/joho/godotenv and https://github.com/caarlos0/env <br>
 `retry` is a fork of https://github.com/avast/retry-go <br>
 `vat` is a fork of https://github.com/mattes/vat <br>
+`colorx` is a fork of https://github.com/icza/gox <br>

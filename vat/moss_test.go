@@ -13,7 +13,8 @@ func TestGetApplicableTax(t *testing.T) {
 		Err           error
 	}{
 		// private customer within EU
-		{"", "DE", 19, false, nil},
+		// {"", "DE", 19, false, nil},
+		{"", "DE", 16, false, nil},
 		{"", "UK", 20, false, nil},
 
 		// business customer within EU
