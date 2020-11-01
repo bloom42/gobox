@@ -28,3 +28,4 @@ See `LICENSE.txt` and https://bloom.sh/licensing
 `colorx` is a fork of https://github.com/icza/gox (7dc3510ae515f0a6e8479d9a382bc8bb04f3a37d)<br>
 `validator` is a fork of https://github.com/asaskevich/govalidator (7a23bdc65eef5f3783e782b436f3065eae3fc72d) <br>
 `otp` is a fork of https://github.com/pquerna/otp (3006c03e19424e57e998d0faa7afe846b291ca14) <br>
+`barcode` is a fork of https://github.com/boombuler/barcode (6c824513baccd76c674ce72112c29ef550187b08) <br>
