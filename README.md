@@ -29,4 +29,4 @@ See `LICENSE.txt` and https://bloom.sh/licensing
 `validator` is a fork of https://github.com/asaskevich/govalidator (7a23bdc65eef5f3783e782b436f3065eae3fc72d) <br>
 `otp` is a fork of https://github.com/pquerna/otp (3006c03e19424e57e998d0faa7afe846b291ca14) <br>
 `barcode` is a fork of https://github.com/boombuler/barcode (6c824513baccd76c674ce72112c29ef550187b08) <br>
-`imaging` is a fork of https://github.com/disintegration/imaging (339f5d48a4f3352fe8bcdefe81de01e25f711b09) <br>
+`imaging` is a fork of https://github.com/bloom42/gobox/imaging (339f5d48a4f3352fe8bcdefe81de01e25f711b09) <br>
