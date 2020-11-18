@@ -11,3 +11,4 @@ fmt:
 .PHONY: tidy
 tidy:
 	go mod tidy
+	go mod vendor
